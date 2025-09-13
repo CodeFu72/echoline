@@ -7,65 +7,228 @@
     <meta name="color-scheme" content="dark" />
     <title>{{ title or "Echo Line" }}</title>
 
-    <!-- Compiled Tailwind stylesheet (cache-busted) -->
-    <link rel="stylesheet" href="/static/css/site.css?v=2" />
+    <!-- Compiled Tailwind -->
+    <link rel="stylesheet" href="/static/css/site.css?v=3" />
 
-    <!-- Small utilities that don’t belong in Tailwind -->
     <style>
-        /* Hide Alpine-marked nodes until hydrated */
         [x-cloak] {
-            display: none !important;
+            display: none !important
         }
 
-        /* High-contrast inputs on dark backgrounds */
-        input[type="text"],
-        input[type="password"],
-        input[type="search"],
-        input[type="email"],
-        textarea {
-            color: #e5e7eb;
-            /* neutral-200 */
-            background-color: #0a0a0a;
-            /* neutral-950-ish */
-            border: 1px solid #374151;
-            /* neutral-700 */
-            border-radius: .5rem;
-            padding: .5rem .75rem;
+        /* ---------- Neon title (single element; glow is a pseudo clone) ---------- */
+        .neon-title {
+            position: relative;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, .05);
         }
 
-        input::placeholder,
-        textarea::placeholder {
-            color: #9ca3af;
-            /* neutral-400/500 */
-            opacity: 1;
+        .neon-title::after {
+            content: attr(data-text);
+            position: absolute;
+            inset: 0;
+            color: #a5f3fc;
+            /* base glow color */
+            filter: blur(6px) saturate(140%);
+            opacity: .35;
+            /* base glow strength */
+            pointer-events: none;
         }
 
-        input:focus,
-        textarea:focus {
-            outline: none;
-            border-color: #22d3ee;
-            /* cyan-400 */
-            box-shadow: 0 0 0 2px #0891b2;
-            /* cyan-600 ring */
+        /* Stronger glow in neon mode */
+        .theme-neon .neon-title::after {
+            opacity: .75;
+            filter: blur(12px) saturate(220%) hue-rotate(30deg);
         }
 
-        .btn-primary {
-            background: #22d3ee;
-            color: #0a0a0a;
-            border-radius: .5rem;
-            padding: .5rem 1rem;
-            font-weight: 600;
+        /* ---------- Surge pulse ---------- */
+        @keyframes surgePulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(34, 211, 238, .55)
+            }
+
+            100% {
+                box-shadow: 0 0 0 24px rgba(34, 211, 238, 0)
+            }
+        }
+
+        .surge-ring {
+            animation: surgePulse .6s ease-out
+        }
+
+        /* ---------- CRT scanlines (toggle with .has-scanlines on <body>) ---------- */
+        .scanlines {
+            pointer-events: none;
+            position: fixed;
+            inset: 0;
+            z-index: 30;
+            /* 1px line / 2px gap for better visibility on #0f172a */
+            background: repeating-linear-gradient(to bottom,
+                    rgba(255, 255, 255, .10) 0px,
+                    rgba(255, 255, 255, .10) 1px,
+                    transparent 1px,
+                    transparent 3px);
+            mix-blend-mode: overlay;
+            opacity: .35;
+        }
+
+        body:not(.has-scanlines) .scanlines {
+            display: none
+        }
+
+        /* ---------- Themes ---------- */
+        .theme-base {
+            --accent: 174 100% 42%
+        }
+
+        /* kept for future use */
+        .theme-neon {
+            --accent: 280 100% 62%;
+            filter: saturate(1.06) contrast(1.04);
+            /* Vignette glow over deep slate */
+            background:
+                radial-gradient(1200px 600px at 50% -20%, rgba(34, 211, 238, .08), transparent 60%),
+                #0f172a;
+        }
+
+        /* Subtle link/heading glow when neon is on */
+        .theme-neon a,
+        .theme-neon h2,
+        .theme-neon h3 {
+            text-shadow: 0 0 10px rgba(34, 211, 238, .25);
         }
     </style>
 
-    <!-- Alpine.js (for tiny interactivity, optional) -->
     <script defer src="/static/js/alpine.global.min.js"></script>
 </head>
 
-<body class="min-h-screen bg-neutral-950 text-neutral-100 antialiased">
+<body x-data="baseUI()" x-init="init()" :class="theme" class="min-h-screen bg-[#0f172a] text-neutral-100 antialiased">
+    <!-- Top Nav -->
+    <header class="sticky top-0 z-40 border-b border-neutral-900 bg-[#0f172a]/80 backdrop-blur">
+        <nav class="mx-auto max-w-6xl px-4 sm:px-6 h-14 flex items-center justify-between">
+            <a href="/" class="font-semibold tracking-tight hover:underline decoration-dotted">Echo Line</a>
+            <div class="flex items-center gap-2">
+                <a href="/" class="px-3 py-1 rounded hover:bg-neutral-800 transition text-sm">Home</a>
+                <a href="/chapters" class="px-3 py-1 rounded hover:bg-neutral-800 transition text-sm">Chapters</a>
+                <a href="/about" class="px-3 py-1 rounded hover:bg-neutral-800 transition text-sm">About</a>
+
+                <!-- Toggles -->
+                <button @click="toggleNeon"
+                    class="px-3 py-1 rounded border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 transition text-sm">
+                    <span x-text="neonOn ? 'Neon: ON' : 'Neon: OFF'"></span>
+                </button>
+
+                <button @click="toggleScanlines"
+                    class="px-3 py-1 rounded border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 transition text-sm">
+                    <span x-text="scanlinesOn ? 'Scanlines: ON' : 'Scanlines: OFF'"></span>
+                </button>
+
+                <button @click="surge"
+                    class="px-3 py-1 rounded border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 transition text-sm">
+                    Surge ⚡
+                </button>
+
+                <!-- Search -->
+                <button @click="openSearch"
+                    class="px-3 py-1 rounded border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 transition text-sm">
+                    Search <kbd class="ml-1 text-neutral-500">/</kbd>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Page -->
     <main class="mx-auto max-w-5xl px-4 sm:px-6 py-8">
         {% block content %}{% endblock %}
     </main>
+
+    <!-- CRT overlay -->
+    <div class="scanlines"></div>
+
+    <!-- Global Lightbox -->
+    <template x-teleport="body">
+        <div x-show="lightboxSrc" x-transition.opacity
+            class="fixed inset-0 bg-black/80 grid place-items-center p-4 z-50" @click.self="lightboxSrc = null">
+            <img :src="lightboxSrc" alt="" class="max-h-full max-w-full rounded-lg shadow-xl" />
+            <button @click="lightboxSrc = null"
+                class="absolute top-4 right-4 px-3 py-1 rounded bg-neutral-900 border border-neutral-700 hover:bg-neutral-800">
+                Close
+            </button>
+        </div>
+    </template>
+
+    <!-- Search Modal -->
+    <template x-teleport="body">
+        <div x-show="searchOpen" x-transition.opacity class="fixed inset-0 bg-black/70 z-50 grid place-items-center p-4"
+            @keydown.escape.window="searchOpen=false" @click.self="searchOpen=false">
+            <div class="w-full max-w-xl rounded-xl border border-neutral-800 bg-neutral-950 p-4">
+                <div class="flex items-center gap-2">
+                    <input x-ref="searchInput" type="search" placeholder="Search (coming soon)…"
+                        class="w-full bg-neutral-950 border border-neutral-700 rounded px-3 py-2 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600" />
+                    <button class="px-3 py-2 rounded border border-neutral-700 hover:bg-neutral-800"
+                        @click="searchOpen=false">Close</button>
+                </div>
+                <p class="text-xs text-neutral-500 mt-2">Press <kbd>/</kbd> to open • <kbd>Esc</kbd> to close</p>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        function baseUI() {
+            return {
+                neonOn: false,
+                scanlinesOn: false,
+                theme: 'theme-base',
+                lightboxSrc: null,
+                searchOpen: false,
+
+                init() {
+                    // restore toggles
+                    this.neonOn = localStorage.getItem('theme-neon') === '1';
+                    this.scanlinesOn = localStorage.getItem('scanlines') === '1';
+                    this.theme = this.neonOn ? 'theme-neon' : 'theme-base';
+                    document.body.classList.toggle('has-scanlines', this.scanlinesOn);
+
+                    // keyboard shortcuts
+                    window.addEventListener('keydown', (e) => {
+                        if (e.key === 't') this.toggleNeon();
+                        if (e.key === '/') { e.preventDefault(); this.openSearch(); }
+                        if (e.key === 'g') this.surge();
+                        if (e.key === 's') this.toggleScanlines();
+                    });
+
+                    // custom events from pages
+                    window.addEventListener('toggle-neon', () => this.toggleNeon());
+                    window.addEventListener('neon-surge', () => this.surge());
+                    window.addEventListener('toggle-scanlines', () => this.toggleScanlines());
+
+                    // global lightbox hook
+                    window.addEventListener('open-lightbox', e => { this.lightboxSrc = e.detail || null });
+                },
+
+                toggleNeon() {
+                    this.neonOn = !this.neonOn;
+                    this.theme = this.neonOn ? 'theme-neon' : 'theme-base';
+                    localStorage.setItem('theme-neon', this.neonOn ? '1' : '0');
+                },
+
+                toggleScanlines() {
+                    this.scanlinesOn = !this.scanlinesOn;
+                    document.body.classList.toggle('has-scanlines', this.scanlinesOn);
+                    localStorage.setItem('scanlines', this.scanlinesOn ? '1' : '0');
+                },
+
+                surge() {
+                    const el = document.querySelector('main') || document.body;
+                    el.classList.add('surge-ring');
+                    setTimeout(() => el.classList.remove('surge-ring'), 650);
+                },
+
+                openSearch() {
+                    this.searchOpen = true;
+                    this.$nextTick(() => this.$refs.searchInput?.focus());
+                },
+            }
+        }
+    </script>
 </body>
 
 </html>

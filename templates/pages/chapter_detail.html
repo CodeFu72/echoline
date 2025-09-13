@@ -1,12 +1,10 @@
 {% extends "base.html" %}
 
 {% block content %}
-<article class="mx-auto px-4 py-8 max-w-measure" role="article">
-    <!-- Header -->
+<article class="mx-auto px-4 py-8 max-w-measure">
     <header class="mb-8 text-center">
-        <h1 class="!text-4xl md:text-5xl !leading-tight font-extrabold tracking-tight">
-            {{ chapter.title }}
-        </h1>
+        <h1 class="neon-title text-4xl md:text-5xl font-extrabold tracking-tight" data-text="{{ chapter.title }}">{{
+            chapter.title }}</h1>
 
         {% if chapter.created_at %}
         <p class="text-sm text-neutral-400 mt-2">
@@ -15,26 +13,19 @@
         {% endif %}
 
         {% if chapter.hero_key %}
-        <figure class="my-6">
-            <img src="{{ ASSETS_BASE }}/{{ chapter.hero_key }}" alt="{{ chapter.title }}"
-                class="w-full h-auto max-h-[400px] object-cover rounded-xl shadow-xl" loading="eager"
-                decoding="async" />
-        </figure>
+        <img src="{{ asset(chapter.hero_key) }}" alt="{{ chapter.title }}"
+            class="my-6 rounded-xl shadow-xl w-full h-auto object-cover" loading="eager" decoding="async" />
         {% endif %}
     </header>
 
-    <!-- Body -->
-    <div class="prose prose-invert prose-reader max-w-none">
+    <div class="prose prose-reader prose-invert max-w-none">
         {{ chapter.content | md | safe }}
     </div>
 
-    <!-- Divider -->
     <hr class="my-10 border-neutral-800" />
 
-    <!-- Navigation Footer -->
     <nav class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3"
         aria-label="Chapter navigation">
-        <!-- Previous -->
         {% if prev %}
         <a href="/chapters/{{ prev.slug }}"
             class="group inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition">
@@ -50,17 +41,14 @@
         </a>
         {% else %}
         <span
-            class="inline-flex items-center gap-2 rounded-lg border border-neutral-900 bg-neutral-950/50 px-4 py-2 text-neutral-600 cursor-default select-none"
-            aria-disabled="true">Previous</span>
+            class="inline-flex items-center gap-2 rounded-lg border border-neutral-900 bg-neutral-950/50 px-4 py-2 text-neutral-600 cursor-default select-none">Previous</span>
         {% endif %}
 
-        <!-- Back to index -->
         <a href="/chapters"
             class="inline-flex items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition text-sm">
             All Chapters
         </a>
 
-        <!-- Next -->
         {% if next %}
         <a href="/chapters/{{ next.slug }}"
             class="group inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition">
@@ -75,8 +63,7 @@
         </a>
         {% else %}
         <span
-            class="inline-flex items-center gap-2 rounded-lg border border-neutral-900 bg-neutral-950/50 px-4 py-2 text-neutral-600 cursor-default select-none"
-            aria-disabled="true">Next</span>
+            class="inline-flex items-center gap-2 rounded-lg border border-neutral-900 bg-neutral-950/50 px-4 py-2 text-neutral-600 cursor-default select-none">Next</span>
         {% endif %}
     </nav>
 </article>

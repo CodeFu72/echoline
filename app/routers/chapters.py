@@ -1,7 +1,5 @@
 # app/routers/chapters.py
 import os
-from typing import Optional
-
 import markdown2
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse
@@ -13,34 +11,34 @@ from app.models.chapter import Chapter
 
 router = APIRouter()
 
-# --- Templates & Globals ---
+# Templates (this instance needs the same helpers as main.py)
 templates = Jinja2Templates(directory="templates")
 
 ASSETS_BASE = os.getenv("ASSETS_BASE_URL", "").rstrip("/")
 templates.env.globals["ASSETS_BASE"] = ASSETS_BASE
 
+def asset(key: str) -> str:
+    if not key:
+        return ""
+    k = key.strip()
+    if k.startswith("http://") or k.startswith("https://"):
+        return k
+    base = ASSETS_BASE.rstrip("/")
+    return f"{base}/{k.lstrip('/')}" if base else f"/{k.lstrip('/')}"
 
-def md_filter(text: str | None) -> str:
+templates.env.globals["asset"] = asset
+
+def md_filter(text: str) -> str:
     if not text:
         return ""
     return markdown2.markdown(
         text,
-        extras=[
-            "fenced-code-blocks",
-            "tables",
-            "strike",
-            "smarty",
-            "break-on-newline",   # 👈 add this
-        ],
+        extras=["fenced-code-blocks", "tables", "strike", "smarty"]
     )
-
 
 templates.env.filters["md"] = md_filter
 
 
-# -----------------
-# Routes
-# -----------------
 @router.get("/", response_class=HTMLResponse)
 def list_chapters(request: Request, db: Session = Depends(get_db)):
     chapters = db.query(Chapter).order_by(Chapter.created_at.desc()).all()
@@ -60,17 +58,17 @@ def show_chapter(slug: str, request: Request, db: Session = Depends(get_db)):
             status_code=404,
         )
 
-    # Prev/Next by created_at
-    prev_chapter = (
+    # Simple prev/next (by created_at, then id fallback)
+    prev = (
         db.query(Chapter)
-        .filter(Chapter.created_at < chapter.created_at)
-        .order_by(Chapter.created_at.desc())
+        .filter(Chapter.created_at <= chapter.created_at, Chapter.id < chapter.id)
+        .order_by(Chapter.created_at.desc(), Chapter.id.desc())
         .first()
     )
-    next_chapter = (
+    next_ = (
         db.query(Chapter)
-        .filter(Chapter.created_at > chapter.created_at)
-        .order_by(Chapter.created_at.asc())
+        .filter(Chapter.created_at >= chapter.created_at, Chapter.id > chapter.id)
+        .order_by(Chapter.created_at.asc(), Chapter.id.asc())
         .first()
     )
 
@@ -79,8 +77,8 @@ def show_chapter(slug: str, request: Request, db: Session = Depends(get_db)):
         {
             "request": request,
             "chapter": chapter,
-            "prev": prev_chapter,
-            "next": next_chapter,
+            "prev": prev,
+            "next": next_,
             "title": chapter.title,
         },
     )
