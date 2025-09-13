@@ -1,0 +1,70 @@
+.
+├── app
+│   ├── db
+│   ├── models
+│   └── routers
+│       └── admin
+├── aws
+│   └── dist
+│       ├── awscli
+│       ├── dateutil
+│       ├── docutils
+│       ├── lib-dynload
+│       ├── prompt_toolkit-3.0.51.dist-info
+│       └── wheel-0.45.1.dist-info
+├── content
+├── migrations
+│   └── versions
+├── static
+│   ├── css
+│   └── js
+└── templates
+    ├── admin
+    └── pages
+
+23 directories
+
+# Root files
+alembic.ini
+app
+aws
+awscliv2.zip
+bucket-policy.json
+content
+migrations
+node_modules
+package.json
+package-lock.json
+postcss.config.js
+static
+tailwind.config.js
+templates
+tree.txt
+
+# app/models
+chapter.py
+__init__.py
+__pycache__
+
+# app/routers
+admin
+chapters.py
+pages.py
+__pycache__
+
+# templates
+admin
+base.html
+index.html
+pages
+
+# templates/admin
+chapter_new.html
+dashboard.html
+login.html
+
+# templates/pages
+about.html
+chapter_detail.html
+chapters.html
+not_found.html

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block content %}
+<article class="mx-auto px-4 py-8 max-w-measure" role="article">
+    <!-- Header -->
+    <header class="mb-8 text-center">
+        <h1 class="!text-4xl md:text-5xl !leading-tight font-extrabold tracking-tight">
+            {{ chapter.title }}
+        </h1>
+
+        {% if chapter.created_at %}
+        <p class="text-sm text-neutral-400 mt-2">
+            Published {{ chapter.created_at.strftime("%B %d, %Y") }}
+        </p>
+        {% endif %}
+
+        {% if chapter.hero_key %}
+        <figure class="my-6">
+            <img src="{{ ASSETS_BASE }}/{{ chapter.hero_key }}" alt="{{ chapter.title }}"
+                class="w-full h-auto max-h-[400px] object-cover rounded-xl shadow-xl" loading="eager"
+                decoding="async" />
+        </figure>
+        {% endif %}
+    </header>
+
+    <!-- Body -->
+    <div class="prose prose-invert prose-reader max-w-none">
+        {{ chapter.content | md | safe }}
+    </div>
+
+    <!-- Divider -->
+    <hr class="my-10 border-neutral-800" />
+
+    <!-- Navigation Footer -->
+    <nav class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3"
+        aria-label="Chapter navigation">
+        <!-- Previous -->
+        {% if prev %}
+        <a href="/chapters/{{ prev.slug }}"
+            class="group inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4 transition -translate-x-0.5 group-hover:-translate-x-1" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" aria-hidden="true">
+                <path d="M15 18l-6-6 6-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span class="text-sm">
+                <span class="block text-neutral-400">Previous</span>
+                <span class="block font-medium text-white truncate max-w-[16rem]">{{ prev.title }}</span>
+            </span>
+        </a>
+        {% else %}
+        <span
+            class="inline-flex items-center gap-2 rounded-lg border border-neutral-900 bg-neutral-950/50 px-4 py-2 text-neutral-600 cursor-default select-none"
+            aria-disabled="true">Previous</span>
+        {% endif %}
+
+        <!-- Back to index -->
+        <a href="/chapters"
+            class="inline-flex items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition text-sm">
+            All Chapters
+        </a>
+
+        <!-- Next -->
+        {% if next %}
+        <a href="/chapters/{{ next.slug }}"
+            class="group inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition">
+            <span class="text-sm text-right">
+                <span class="block text-neutral-400">Next</span>
+                <span class="block font-medium text-white truncate max-w-[16rem]">{{ next.title }}</span>
+            </span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition translate-x-0.5 group-hover:translate-x-1"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <path d="M9 6l6 6-6 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+        </a>
+        {% else %}
+        <span
+            class="inline-flex items-center gap-2 rounded-lg border border-neutral-900 bg-neutral-950/50 px-4 py-2 text-neutral-600 cursor-default select-none"
+            aria-disabled="true">Next</span>
+        {% endif %}
+    </nav>
+</article>
+{% endblock %}

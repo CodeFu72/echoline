@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en" class="h-full">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>{{ title or "Echo Line" }}</title>
+
+    <!-- Compiled Tailwind stylesheet (cache-busted) -->
+    <link rel="stylesheet" href="/static/css/site.css?v=2" />
+
+    <!-- Small utilities that don’t belong in Tailwind -->
+    <style>
+        /* Hide Alpine-marked nodes until hydrated */
+        [x-cloak] {
+            display: none !important;
+        }
+
+        /* High-contrast inputs on dark backgrounds */
+        input[type="text"],
+        input[type="password"],
+        input[type="search"],
+        input[type="email"],
+        textarea {
+            color: #e5e7eb;
+            /* neutral-200 */
+            background-color: #0a0a0a;
+            /* neutral-950-ish */
+            border: 1px solid #374151;
+            /* neutral-700 */
+            border-radius: .5rem;
+            padding: .5rem .75rem;
+        }
+
+        input::placeholder,
+        textarea::placeholder {
+            color: #9ca3af;
+            /* neutral-400/500 */
+            opacity: 1;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #22d3ee;
+            /* cyan-400 */
+            box-shadow: 0 0 0 2px #0891b2;
+            /* cyan-600 ring */
+        }
+
+        .btn-primary {
+            background: #22d3ee;
+            color: #0a0a0a;
+            border-radius: .5rem;
+            padding: .5rem 1rem;
+            font-weight: 600;
+        }
+    </style>
+
+    <!-- Alpine.js (for tiny interactivity, optional) -->
+    <script defer src="/static/js/alpine.global.min.js"></script>
+</head>
+
+<body class="min-h-screen bg-neutral-950 text-neutral-100 antialiased">
+    <main class="mx-auto max-w-5xl px-4 sm:px-6 py-8">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+
+</html>

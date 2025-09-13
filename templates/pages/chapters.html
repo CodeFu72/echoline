@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="max-w-3xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-semibold tracking-tight">Chapters</h1>
+    <ul class="mt-6 space-y-4">
+        {% for c in chapters %}
+        <li class="rounded-xl border border-neutral-800 bg-neutral-900/50 p-4">
+            <div class="flex items-center justify-between gap-4">
+                <div>
+                    <h2 class="font-medium">
+                        <a class="hover:underline" href="/chapters/{{ c.slug }}">{{ c.title }}</a>
+                    </h2>
+                    <p class="text-xs mt-1 text-neutral-400">
+                        {{ (c.created_at.strftime("%b %d, %Y") if c.created_at else "") }}
+                    </p>
+                </div>
+                <a href="/chapters/{{ c.slug }}" class="text-sm px-3 py-1 rounded bg-neutral-800 hover:bg-neutral-700">
+                    Open
+                </a>
+            </div>
+        </li>
+        {% else %}
+        <li class="text-neutral-400">No chapters yet.</li>
+        {% endfor %}
+    </ul>
+</section>
+{% endblock %}

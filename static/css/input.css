@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------
+   Custom Reader Styles
+   ------------------------ */
+@layer components {
+    .prose-reader {
+        @apply prose prose-invert max-w-measure text-lg leading-relaxed;
+        line-height: 1.9;
+        /* overrides prose default */
+        font-size: 18px;
+        /* comfy body text size */
+    }
+
+    /* Paragraphs, lists, block elements */
+    .prose-reader :where(p, ul, ol, blockquote, pre, table):not(:where(.not-prose, .not-prose *)) {
+        margin-top: 1.15em;
+        margin-bottom: 1.15em;
+    }
+
+    /* Headings */
+    .prose-reader :where(h1):not(:where(.not-prose, .not-prose *)) {
+        @apply font-extrabold;
+        letter-spacing: -0.02em;
+        margin-bottom: 0.8em;
+    }
+
+    .prose-reader :where(h2):not(:where(.not-prose, .not-prose *)) {
+        @apply font-bold;
+        letter-spacing: -0.01em;
+    }
+
+    /* Lists */
+    .prose-reader :where(ul > li, ol > li):not(:where(.not-prose, .not-prose *)) {
+        padding-left: 0.15em;
+    }
+
+    .prose-reader :where(ul > li)::marker {
+        color: #737373;
+        /* neutral-500 */
+    }
+
+    .prose-reader :where(ol > li)::marker {
+        color: #737373;
+        /* neutral-500 */
+    }
+
+    /* Blockquotes */
+    .prose-reader :where(blockquote):not(:where(.not-prose, .not-prose *)) {
+        border-left-width: 3px;
+        border-left-color: #0f766e;
+        /* teal-700 */
+        padding-left: 1rem;
+        font-style: normal;
+        color: #f5f5f5;
+        /* neutral-100-ish */
+    }
+
+    /* Strong emphasis */
+    .prose-reader :where(strong):not(:where(.not-prose, .not-prose *)) {
+        color: #fff;
+    }
+
+    /* Images */
+    .prose-reader :where(img):not(:where(.not-prose, .not-prose *)) {
+        @apply rounded-xl;
+        margin-top: 2em;
+        margin-bottom: 2em;
+    }
+
+    /* Divider */
+    .prose-reader :where(hr):not(:where(.not-prose, .not-prose *)) {
+        border-color: #262626;
+        /* neutral-800 */
+        margin-top: 3em;
+        margin-bottom: 3em;
+    }
+}

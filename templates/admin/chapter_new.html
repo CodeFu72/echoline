@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+    <header class="flex items-center justify-between">
+        <h1 class="text-2xl font-semibold">New Chapter</h1>
+        <a href="/admin/dashboard" class="text-sm underline text-neutral-300 hover:text-white">Back to dashboard</a>
+    </header>
+
+    {% if error %}
+    <p class="text-red-400 text-sm">{{ error }}</p>
+    {% endif %}
+
+    <form method="post" action="/admin/chapters/create" class="space-y-5">
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Title</label>
+            <input name="title" required value="{{ form.title if form else '' }}" class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700
+               text-neutral-100 placeholder-neutral-500
+               focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600" placeholder="Chapter title">
+        </div>
+
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Slug (optional)</label>
+            <input name="slug" value="{{ form.slug if form else '' }}" class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700
+               text-neutral-100 placeholder-neutral-500
+               focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+                placeholder="auto-generated from title if empty">
+        </div>
+
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Hero Asset Key (optional)</label>
+            <input name="hero_key" value="{{ form.hero_key if form else '' }}" class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700
+               text-neutral-100 placeholder-neutral-500
+               focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+                placeholder="e.g. img/chapters/ep01.webp or Leila_placeholder_001.jpg">
+            <p class="text-xs text-neutral-500 mt-1">Full URL will be built as {{ ASSETS_BASE }}/&lt;hero_key&gt;.</p>
+        </div>
+
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Body (Markdown or HTML)</label>
+            <textarea name="body" rows="12" class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700
+               text-neutral-100 placeholder-neutral-500
+               focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+                placeholder="Write your chapter here...">{{ form.body if form else '' }}</textarea>
+        </div>
+
+        <button class="btn-primary">Publish</button>
+    </form>
+</div>
+{% endblock %}
