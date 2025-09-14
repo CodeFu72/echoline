@@ -3,22 +3,42 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="dark" />
     <title>{{ title or "Echo Line" }}</title>
 
     <!-- Compiled Tailwind -->
-    <link rel="stylesheet" href="/static/css/site.css?v=3" />
+    <link rel="stylesheet" href="/static/css/site.css?v=9" />
 
     <style>
         [x-cloak] {
             display: none !important
         }
 
-        /* ---------- Neon title (single element; glow is a pseudo clone) ---------- */
+        /* Neon title (used across pages) */
         .neon-title {
             position: relative;
-            text-shadow: 0 1px 0 rgba(255, 255, 255, .05);
+            text-shadow: 0 1px 0 rgba(255, 255, 255, .05)
+        }
+
+        /* Force home hero to stop going full-bleed on desktop */
+        .home-hero-wrap {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        @media (min-width: 768px) {
+            .home-hero-wrap {
+                max-width: 72rem;
+            }
+
+            /* ~max-w-6xl */
+        }
+
+        .home-hero-wrap img {
+            display: block;
+            width: 100%;
+            height: auto;
         }
 
         .neon-title::after {
@@ -26,20 +46,36 @@
             position: absolute;
             inset: 0;
             color: #a5f3fc;
-            /* base glow color */
             filter: blur(6px) saturate(140%);
             opacity: .35;
-            /* base glow strength */
             pointer-events: none;
         }
 
-        /* Stronger glow in neon mode */
         .theme-neon .neon-title::after {
             opacity: .75;
-            filter: blur(12px) saturate(220%) hue-rotate(30deg);
+            filter: blur(12px) saturate(220%) hue-rotate(30deg)
         }
 
-        /* ---------- Surge pulse ---------- */
+        /* Scanlines overlay (body.has-scanlines toggles) */
+        .scanlines {
+            pointer-events: none;
+            position: fixed;
+            inset: 0;
+            z-index: 30;
+            background: repeating-linear-gradient(to bottom,
+                    rgba(255, 255, 255, .10) 0px,
+                    rgba(255, 255, 255, .10) 1px,
+                    transparent 1px,
+                    transparent 3px);
+            mix-blend-mode: overlay;
+            opacity: .35;
+        }
+
+        body:not(.has-scanlines) .scanlines {
+            display: none
+        }
+
+        /* Surge ring */
         @keyframes surgePulse {
             0% {
                 box-shadow: 0 0 0 0 rgba(34, 211, 238, .55)
@@ -54,58 +90,45 @@
             animation: surgePulse .6s ease-out
         }
 
-        /* ---------- CRT scanlines (toggle with .has-scanlines on <body>) ---------- */
-        .scanlines {
-            pointer-events: none;
-            position: fixed;
-            inset: 0;
-            z-index: 30;
-            /* 1px line / 2px gap for better visibility on #0f172a */
-            background: repeating-linear-gradient(to bottom,
-                    rgba(255, 255, 255, .10) 0px,
-                    rgba(255, 255, 255, .10) 1px,
-                    transparent 1px,
-                    transparent 3px);
-            mix-blend-mode: overlay;
-            opacity: .35;
-        }
-
-        body:not(.has-scanlines) .scanlines {
-            display: none
-        }
-
-        /* ---------- Themes ---------- */
+        /* Themes (bg & accent) */
         .theme-base {
             --accent: 174 100% 42%
         }
 
-        /* kept for future use */
         .theme-neon {
             --accent: 280 100% 62%;
             filter: saturate(1.06) contrast(1.04);
-            /* Vignette glow over deep slate */
             background:
                 radial-gradient(1200px 600px at 50% -20%, rgba(34, 211, 238, .08), transparent 60%),
                 #0f172a;
         }
 
-        /* Subtle link/heading glow when neon is on */
-        .theme-neon a,
-        .theme-neon h2,
-        .theme-neon h3 {
-            text-shadow: 0 0 10px rgba(34, 211, 238, .25);
+        /* ---- SAFETY SHIM ----
+       If Tailwind purged md: utilities, ensure desktop nav still works. */
+        @media (min-width: 768px) {
+            .md\:flex {
+                display: flex !important;
+            }
+
+            .md\:hidden {
+                display: none !important;
+            }
         }
     </style>
 
     <script defer src="/static/js/alpine.global.min.js"></script>
 </head>
 
-<body x-data="baseUI()" x-init="init()" :class="theme" class="min-h-screen bg-[#0f172a] text-neutral-100 antialiased">
-    <!-- Top Nav -->
-    <header class="sticky top-0 z-40 border-b border-neutral-900 bg-[#0f172a]/80 backdrop-blur">
+<body x-data="baseUI()" x-init="init()" :class="theme" class="min-h-screen bg-neutral-950 text-neutral-100 antialiased">
+    <!-- Sticky Top Nav -->
+    <header
+        class="sticky top-0 z-40 border-b border-neutral-900 bg-neutral-950/80 backdrop-blur supports-[backdrop-filter]:bg-neutral-950/60">
         <nav class="mx-auto max-w-6xl px-4 sm:px-6 h-14 flex items-center justify-between">
-            <a href="/" class="font-semibold tracking-tight hover:underline decoration-dotted">Echo Line</a>
-            <div class="flex items-center gap-2">
+            <!-- Brand -->
+            <a href="/" class="shrink-0 font-semibold tracking-tight hover:underline decoration-dotted">Echo Line</a>
+
+            <!-- Desktop links -->
+            <div class="hidden md:flex items-center gap-2">
                 <a href="/" class="px-3 py-1 rounded hover:bg-neutral-800 transition text-sm">Home</a>
                 <a href="/chapters" class="px-3 py-1 rounded hover:bg-neutral-800 transition text-sm">Chapters</a>
                 <a href="/about" class="px-3 py-1 rounded hover:bg-neutral-800 transition text-sm">About</a>
@@ -115,43 +138,83 @@
                     class="px-3 py-1 rounded border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 transition text-sm">
                     <span x-text="neonOn ? 'Neon: ON' : 'Neon: OFF'"></span>
                 </button>
-
                 <button @click="toggleScanlines"
                     class="px-3 py-1 rounded border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 transition text-sm">
                     <span x-text="scanlinesOn ? 'Scanlines: ON' : 'Scanlines: OFF'"></span>
                 </button>
-
                 <button @click="surge"
                     class="px-3 py-1 rounded border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 transition text-sm">
                     Surge ⚡
                 </button>
-
-                <!-- Search -->
                 <button @click="openSearch"
                     class="px-3 py-1 rounded border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 transition text-sm">
                     Search <kbd class="ml-1 text-neutral-500">/</kbd>
                 </button>
             </div>
+
+            <!-- Mobile menu button -->
+            <button @click="mobileOpen=true"
+                class="md:hidden inline-flex items-center gap-2 px-3 py-1 rounded border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 text-sm">
+                Menu
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M3 6h18M3 12h18M3 18h18" stroke-width="2" stroke-linecap="round" />
+                </svg>
+            </button>
         </nav>
+
+        <!-- Mobile drawer -->
+        <div x-show="mobileOpen" x-transition.opacity x-cloak @keydown.escape.window="mobileOpen=false"
+            class="md:hidden fixed inset-0 z-50 bg-black/70">
+            <aside @click.outside="mobileOpen=false"
+                class="absolute left-0 top-0 h-full w-[80vw] max-w-sm bg-neutral-950 border-r border-neutral-800 p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="font-semibold">Echo Line</span>
+                    <button @click="mobileOpen=false" class="px-2 py-1 rounded hover:bg-neutral-800">Close</button>
+                </div>
+
+                <nav class="mt-2 space-y-1">
+                    <a href="/" class="block rounded px-3 py-2 hover:bg-neutral-800">Home</a>
+                    <a href="/chapters" class="block rounded px-3 py-2 hover:bg-neutral-800">Chapters</a>
+                    <a href="/about" class="block rounded px-3 py-2 hover:bg-neutral-800">About</a>
+                </nav>
+
+                <div class="mt-4 grid grid-cols-2 gap-2">
+                    <button @click="toggleNeon"
+                        class="rounded border border-neutral-800 bg-neutral-900/60 px-3 py-2 hover:bg-neutral-800 text-sm col-span-2">
+                        <span x-text="neonOn ? 'Neon: ON' : 'Neon: OFF'"></span>
+                    </button>
+                    <button @click="toggleScanlines"
+                        class="rounded border border-neutral-800 bg-neutral-900/60 px-3 py-2 hover:bg-neutral-800 text-sm col-span-2">
+                        <span x-text="scanlinesOn ? 'Scanlines: ON' : 'Scanlines: OFF'"></span>
+                    </button>
+                    <button @click="surge"
+                        class="rounded border border-neutral-800 bg-neutral-900/60 px-3 py-2 hover:bg-neutral-800 text-sm col-span-2">
+                        Surge ⚡
+                    </button>
+                    <button @click="openSearch"
+                        class="rounded border border-neutral-800 bg-neutral-900/60 px-3 py-2 hover:bg-neutral-800 text-sm col-span-2">
+                        Search <kbd class="ml-1 text-neutral-500">/</kbd>
+                    </button>
+                </div>
+            </aside>
+        </div>
     </header>
 
     <!-- Page -->
-    <main class="mx-auto max-w-5xl px-4 sm:px-6 py-8">
+    <main class="mx-auto max-w-6xl w-full px-4 sm:px-6 py-6 sm:py-8">
         {% block content %}{% endblock %}
     </main>
 
     <!-- CRT overlay -->
     <div class="scanlines"></div>
 
-    <!-- Global Lightbox -->
+    <!-- Lightbox -->
     <template x-teleport="body">
         <div x-show="lightboxSrc" x-transition.opacity
-            class="fixed inset-0 bg-black/80 grid place-items-center p-4 z-50" @click.self="lightboxSrc = null">
+            class="fixed inset-0 bg-black/80 grid place-items-center p-4 z-50" @click.self="lightboxSrc=null">
             <img :src="lightboxSrc" alt="" class="max-h-full max-w-full rounded-lg shadow-xl" />
-            <button @click="lightboxSrc = null"
-                class="absolute top-4 right-4 px-3 py-1 rounded bg-neutral-900 border border-neutral-700 hover:bg-neutral-800">
-                Close
-            </button>
+            <button @click="lightboxSrc=null"
+                class="absolute top-4 right-4 px-3 py-1 rounded bg-neutral-900 border border-neutral-700 hover:bg-neutral-800">Close</button>
         </div>
     </template>
 
@@ -179,15 +242,14 @@
                 theme: 'theme-base',
                 lightboxSrc: null,
                 searchOpen: false,
+                mobileOpen: false,
 
                 init() {
-                    // restore toggles
                     this.neonOn = localStorage.getItem('theme-neon') === '1';
                     this.scanlinesOn = localStorage.getItem('scanlines') === '1';
                     this.theme = this.neonOn ? 'theme-neon' : 'theme-base';
                     document.body.classList.toggle('has-scanlines', this.scanlinesOn);
 
-                    // keyboard shortcuts
                     window.addEventListener('keydown', (e) => {
                         if (e.key === 't') this.toggleNeon();
                         if (e.key === '/') { e.preventDefault(); this.openSearch(); }
@@ -195,12 +257,9 @@
                         if (e.key === 's') this.toggleScanlines();
                     });
 
-                    // custom events from pages
                     window.addEventListener('toggle-neon', () => this.toggleNeon());
                     window.addEventListener('neon-surge', () => this.surge());
                     window.addEventListener('toggle-scanlines', () => this.toggleScanlines());
-
-                    // global lightbox hook
                     window.addEventListener('open-lightbox', e => { this.lightboxSrc = e.detail || null });
                 },
 
@@ -209,22 +268,17 @@
                     this.theme = this.neonOn ? 'theme-neon' : 'theme-base';
                     localStorage.setItem('theme-neon', this.neonOn ? '1' : '0');
                 },
-
                 toggleScanlines() {
                     this.scanlinesOn = !this.scanlinesOn;
                     document.body.classList.toggle('has-scanlines', this.scanlinesOn);
                     localStorage.setItem('scanlines', this.scanlinesOn ? '1' : '0');
                 },
-
                 surge() {
                     const el = document.querySelector('main') || document.body;
-                    el.classList.add('surge-ring');
-                    setTimeout(() => el.classList.remove('surge-ring'), 650);
+                    el.classList.add('surge-ring'); setTimeout(() => el.classList.remove('surge-ring'), 650);
                 },
-
                 openSearch() {
-                    this.searchOpen = true;
-                    this.$nextTick(() => this.$refs.searchInput?.focus());
+                    this.searchOpen = true; this.$nextTick(() => this.$refs.searchInput?.focus());
                 },
             }
         }

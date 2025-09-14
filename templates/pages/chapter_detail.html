@@ -1,20 +1,16 @@
 {% extends "base.html" %}
-
 {% block content %}
-<article class="mx-auto px-4 py-8 max-w-measure">
-    <header class="mb-8 text-center">
-        <h1 class="neon-title text-4xl md:text-5xl font-extrabold tracking-tight" data-text="{{ chapter.title }}">{{
-            chapter.title }}</h1>
-
+<article class="mx-auto w-full max-w-measure px-0 sm:px-2">
+    <header class="mb-6 sm:mb-8">
+        <h1 class="neon-title text-3xl sm:text-4xl font-extrabold tracking-tight" :data-text="'{{ chapter.title|e }}'">
+            {{ chapter.title }}
+        </h1>
         {% if chapter.created_at %}
-        <p class="text-sm text-neutral-400 mt-2">
-            Published {{ chapter.created_at.strftime("%B %d, %Y") }}
-        </p>
+        <p class="text-xs sm:text-sm text-neutral-400 mt-2">Published {{ chapter.created_at.strftime("%B %d, %Y") }}</p>
         {% endif %}
-
         {% if chapter.hero_key %}
         <img src="{{ asset(chapter.hero_key) }}" alt="{{ chapter.title }}"
-            class="my-6 rounded-xl shadow-xl w-full h-auto object-cover" loading="eager" decoding="async" />
+            class="mt-4 sm:mt-6 rounded-xl shadow-xl w-full h-auto object-cover" loading="eager" decoding="async" />
         {% endif %}
     </header>
 
@@ -22,13 +18,12 @@
         {{ chapter.content | md | safe }}
     </div>
 
-    <hr class="my-10 border-neutral-800" />
+    <hr class="my-8 sm:my-10 border-neutral-800" />
 
-    <nav class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3"
-        aria-label="Chapter navigation">
+    <nav class="grid gap-3 sm:grid-cols-[1fr_auto_1fr] items-stretch" aria-label="Chapter navigation">
         {% if prev %}
         <a href="/chapters/{{ prev.slug }}"
-            class="group inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition">
+            class="order-2 sm:order-1 group inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition">
             <svg xmlns="http://www.w3.org/2000/svg"
                 class="h-4 w-4 transition -translate-x-0.5 group-hover:-translate-x-1" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" aria-hidden="true">
@@ -36,25 +31,26 @@
             </svg>
             <span class="text-sm">
                 <span class="block text-neutral-400">Previous</span>
-                <span class="block font-medium text-white truncate max-w-[16rem]">{{ prev.title }}</span>
+                <span class="block font-medium text-white truncate max-w-[12rem] sm:max-w-[16rem]">{{ prev.title
+                    }}</span>
             </span>
         </a>
         {% else %}
         <span
-            class="inline-flex items-center gap-2 rounded-lg border border-neutral-900 bg-neutral-950/50 px-4 py-2 text-neutral-600 cursor-default select-none">Previous</span>
+            class="order-2 sm:order-1 inline-flex items-center gap-2 rounded-lg border border-neutral-900 bg-neutral-950/50 px-4 py-2 text-neutral-600 cursor-default select-none">Previous</span>
         {% endif %}
 
         <a href="/chapters"
-            class="inline-flex items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition text-sm">
-            All Chapters
-        </a>
+            class="order-1 sm:order-2 inline-flex items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition text-sm">All
+            Chapters</a>
 
         {% if next %}
         <a href="/chapters/{{ next.slug }}"
-            class="group inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition">
+            class="order-3 group inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition justify-self-end">
             <span class="text-sm text-right">
                 <span class="block text-neutral-400">Next</span>
-                <span class="block font-medium text-white truncate max-w-[16rem]">{{ next.title }}</span>
+                <span class="block font-medium text-white truncate max-w-[12rem] sm:max-w-[16rem]">{{ next.title
+                    }}</span>
             </span>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition translate-x-0.5 group-hover:translate-x-1"
                 viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
@@ -63,7 +59,7 @@
         </a>
         {% else %}
         <span
-            class="inline-flex items-center gap-2 rounded-lg border border-neutral-900 bg-neutral-950/50 px-4 py-2 text-neutral-600 cursor-default select-none">Next</span>
+            class="order-3 inline-flex items-center gap-2 rounded-lg border border-neutral-900 bg-neutral-950/50 px-4 py-2 text-neutral-600 cursor-default select-none justify-self-end">Next</span>
         {% endif %}
     </nav>
 </article>

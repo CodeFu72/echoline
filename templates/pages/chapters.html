@@ -1,19 +1,20 @@
 {% extends "base.html" %}
 {% block content %}
-<section>
-    <h1 class="text-3xl font-bold tracking-tight">Chapters</h1>
-    <ul class="mt-6 grid sm:grid-cols-2 gap-4">
+<section class="mx-auto max-w-3xl">
+    <h1 class="neon-title text-3xl sm:text-4xl font-extrabold tracking-tight" :data-text="'Chapters'">Chapters</h1>
+
+    <ul class="mt-6 grid gap-3 sm:gap-4">
         {% for c in chapters %}
-        <li class="rounded-xl border border-neutral-800 bg-neutral-900/50 p-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h2 class="font-medium">{{ c.title }}</h2>
-                    <p class="text-xs mt-1 text-neutral-400">{{ c.created_at.strftime('%b %d, %Y') if c.created_at else
-                        '' }}</p>
+        <li class="rounded-xl border border-neutral-800 bg-neutral-900/40 hover:bg-neutral-900 transition">
+            <a href="/chapters/{{ c.slug }}" class="flex items-center justify-between gap-3 p-4">
+                <div class="min-w-0 flex-1">
+                    <h2 class="font-medium truncate">{{ c.title }}</h2>
+                    <p class="text-xs text-neutral-400 mt-1">{% if c.created_at %}{{ c.created_at.strftime("%b %d, %Y")
+                        }}{% else %}&nbsp;{% endif %}</p>
                 </div>
-                <a href="/chapters/{{ c.slug }}"
-                    class="text-sm px-3 py-1 rounded bg-neutral-800 hover:bg-neutral-700">Open</a>
-            </div>
+                <span
+                    class="inline-flex items-center justify-center text-sm rounded border border-neutral-700 px-3 py-1 shrink-0">Open</span>
+            </a>
         </li>
         {% endfor %}
     </ul>
