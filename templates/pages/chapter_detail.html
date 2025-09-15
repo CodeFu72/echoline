@@ -1,29 +1,121 @@
 {% extends "base.html" %}
+
 {% block content %}
-<article class="mx-auto w-full max-w-measure px-0 sm:px-2">
-    <header class="mb-6 sm:mb-8">
-        <h1 class="neon-title text-3xl sm:text-4xl font-extrabold tracking-tight" :data-text="'{{ chapter.title|e }}'">
+
+<!-- 1) Server renders pure JSON (safer for editors / prettier): -->
+<script id="chapter-seed" type="application/json">
+{{ {
+  "assetsBase": (ASSETS_BASE or ''),
+  "chapter": {
+    "title": (chapter.title or ''),
+    "created_at": (chapter.created_at.strftime('%B %d, %Y') if chapter.created_at else ''),
+    "hero_key": (chapter.hero_key or ''),
+    "ambient_url": (chapter.ambient_url or ''),
+    "reel_url": (chapter.reel_url or '')
+  },
+  "meta": (chapter.meta or {})
+} | tojson }}
+</script>
+
+<!-- 2) Read it and expose as a global before Alpine evaluates x-data: -->
+<script>
+    (function () {
+        const el = document.getElementById('chapter-seed');
+        let seed = {};
+        try { seed = JSON.parse(el?.textContent || '{}'); } catch { seed = {}; }
+        window.CHAPTER_SEED = seed;
+    }());
+</script>
+
+<article x-data="chapterView(window.CHAPTER_SEED)" x-init="init()"
+    class="mx-auto max-w-5xl px-4 sm:px-6 py-6 space-y-8">
+
+    <!-- Header -->
+    <header class="text-center space-y-3">
+        <h1 class="neon-title text-3xl sm:text-4xl font-extrabold tracking-tight" data-text="{{ chapter.title }}">
             {{ chapter.title }}
         </h1>
-        {% if chapter.created_at %}
-        <p class="text-xs sm:text-sm text-neutral-400 mt-2">Published {{ chapter.created_at.strftime("%B %d, %Y") }}</p>
-        {% endif %}
+
+        <template x-if="state.created_at">
+            <p class="text-sm text-neutral-400" x-text="`Published ${state.created_at}`"></p>
+        </template>
+
         {% if chapter.hero_key %}
         <img src="{{ asset(chapter.hero_key) }}" alt="{{ chapter.title }}"
-            class="mt-4 sm:mt-6 rounded-xl shadow-xl w-full h-auto object-cover" loading="eager" decoding="async" />
+            class="mt-4 w-full rounded-xl border border-neutral-800 bg-neutral-900/40 object-cover md:max-h-[560px]"
+            loading="eager" decoding="async" />
         {% endif %}
     </header>
 
+    <!-- Ambient / Reel -->
+    <section x-show="flags.hasAmbient || flags.hasReel" x-cloak
+        class="rounded-xl border border-neutral-800 bg-neutral-900/40 p-3 sm:p-4">
+        <div class="flex flex-col gap-3">
+            <template x-if="flags.hasAmbient">
+                <div class="w-full aspect-video rounded-lg overflow-hidden border border-neutral-800 bg-black">
+                    <iframe :src="state.ambient_url" title="Ambient" allow="autoplay; encrypted-media" allowfullscreen
+                        class="w-full h-full"></iframe>
+                </div>
+            </template>
+
+            <template x-if="flags.hasReel">
+                <div class="flex items-center justify-center">
+                    <a :href="state.reel_url" target="_blank" rel="noopener"
+                        class="inline-flex h-11 items-center justify-center rounded-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-5 transition">
+                        Watch the Reel
+                    </a>
+                </div>
+            </template>
+        </div>
+    </section>
+
+    <!-- Body -->
     <div class="prose prose-reader prose-invert max-w-none">
         {{ chapter.content | md | safe }}
     </div>
 
-    <hr class="my-8 sm:my-10 border-neutral-800" />
+    <hr class="my-8 border-neutral-800" />
 
-    <nav class="grid gap-3 sm:grid-cols-[1fr_auto_1fr] items-stretch" aria-label="Chapter navigation">
+    <!-- EXTRAS -->
+    <section aria-label="Extras" class="rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <h2 class="text-lg font-semibold">Extras</h2>
+
+            <div class="flex flex-wrap items-center gap-2">
+                <template x-if="flags.hasSketches">
+                    <button @click="open('sketches')"
+                        class="inline-flex h-11 items-center justify-center rounded-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-5 transition">
+                        View Sketches
+                    </button>
+                </template>
+
+                <template x-if="flags.hasNotes">
+                    <button @click="open('notes')"
+                        class="inline-flex h-11 items-center justify-center rounded-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-5 transition">
+                        Read Notes
+                    </button>
+                </template>
+
+                <template x-if="flags.hasLore">
+                    <button @click="open('lore')"
+                        class="inline-flex h-11 items-center justify-center rounded-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-5 transition">
+                        Character Lore
+                    </button>
+                </template>
+
+                <template x-if="!flags.hasSketches && !flags.hasNotes && !flags.hasLore">
+                    <span class="text-sm text-neutral-400">Bonus content coming soon.</span>
+                </template>
+            </div>
+        </div>
+    </section>
+
+    <!-- NAV -->
+    <nav class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3"
+        aria-label="Chapter navigation">
         {% if prev %}
         <a href="/chapters/{{ prev.slug }}"
-            class="order-2 sm:order-1 group inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition">
+            class="group inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition">
             <svg xmlns="http://www.w3.org/2000/svg"
                 class="h-4 w-4 transition -translate-x-0.5 group-hover:-translate-x-1" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" aria-hidden="true">
@@ -31,26 +123,27 @@
             </svg>
             <span class="text-sm">
                 <span class="block text-neutral-400">Previous</span>
-                <span class="block font-medium text-white truncate max-w-[12rem] sm:max-w-[16rem]">{{ prev.title
-                    }}</span>
+                <span class="block font-medium text-white truncate max-w-[16rem]">{{ prev.title }}</span>
             </span>
         </a>
         {% else %}
         <span
-            class="order-2 sm:order-1 inline-flex items-center gap-2 rounded-lg border border-neutral-900 bg-neutral-950/50 px-4 py-2 text-neutral-600 cursor-default select-none">Previous</span>
+            class="inline-flex items-center gap-2 rounded-lg border border-neutral-900 bg-neutral-950/50 px-4 py-2 text-neutral-600 cursor-default select-none">
+            Previous
+        </span>
         {% endif %}
 
         <a href="/chapters"
-            class="order-1 sm:order-2 inline-flex items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition text-sm">All
-            Chapters</a>
+            class="inline-flex items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition text-sm">
+            All Chapters
+        </a>
 
         {% if next %}
         <a href="/chapters/{{ next.slug }}"
-            class="order-3 group inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition justify-self-end">
+            class="group inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition">
             <span class="text-sm text-right">
                 <span class="block text-neutral-400">Next</span>
-                <span class="block font-medium text-white truncate max-w-[12rem] sm:max-w-[16rem]">{{ next.title
-                    }}</span>
+                <span class="block font-medium text-white truncate max-w-[16rem]">{{ next.title }}</span>
             </span>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition translate-x-0.5 group-hover:translate-x-1"
                 viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
@@ -59,8 +152,219 @@
         </a>
         {% else %}
         <span
-            class="order-3 inline-flex items-center gap-2 rounded-lg border border-neutral-900 bg-neutral-950/50 px-4 py-2 text-neutral-600 cursor-default select-none justify-self-end">Next</span>
+            class="inline-flex items-center gap-2 rounded-lg border border-neutral-900 bg-neutral-950/50 px-4 py-2 text-neutral-600 cursor-default select-none">
+            Next
+        </span>
         {% endif %}
     </nav>
+
+    <!-- === MODALS (inline, no teleport) === -->
+
+    <!-- Backdrop -->
+    <div x-show="openKey !== null" x-transition.opacity x-cloak class="fixed inset-0 z-[9998] bg-black/70"
+        @click.self="close()" @keydown.escape.window="close()"></div>
+
+    <!-- SKETCHES -->
+    <div x-show="openKey==='sketches'" x-transition x-cloak
+        class="fixed inset-x-0 top-[8vh] z-[9999] mx-auto w-[92vw] max-w-5xl rounded-xl border border-neutral-800 bg-neutral-950 p-4 sm:p-6 shadow-xl">
+        <header class="flex items-center justify-between mb-3">
+            <h3 class="text-lg font-semibold">Sketches &amp; Panels</h3>
+            <button @click="close()"
+                class="px-3 py-1 rounded border border-neutral-700 hover:bg-neutral-800">Close</button>
+        </header>
+
+        <ul role="list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <!-- Alpine v3: x-for must be on a <template> -->
+            <template x-for="(img, idx) in state.sketches" :key="img?.src || idx">
+                <li>
+                    <button @click="$dispatch('open-lightbox', img.src)"
+                        class="block w-full aspect-[4/3] overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900/40 hover:bg-neutral-900"
+                        :disabled="!img?.src">
+                        <img :src="img.src" :alt="img.alt || 'Sketch'" class="w-full h-full object-cover" loading="lazy"
+                            decoding="async" x-show="!!img?.src">
+                    </button>
+                    <p class="mt-1 text-xs text-neutral-400" x-text="img.caption || ''"></p>
+                </li>
+            </template>
+
+            <!-- Empty state -->
+            <li x-show="!state.sketches || state.sketches.length === 0" class="col-span-full text-sm text-neutral-400">
+                No sketches yet.
+            </li>
+        </ul>
+    </div>
+
+    <!-- NOTES -->
+    <div x-show="openKey==='notes'" x-transition x-cloak
+        class="fixed inset-x-0 top-[10vh] z-[9999] mx-auto w-[92vw] max-w-3xl rounded-xl border border-neutral-800 bg-neutral-950 p-4 sm:p-6 shadow-xl">
+        <header class="flex items-center justify-between mb-3">
+            <h3 class="text-lg font-semibold">Author Notes</h3>
+            <button @click="close()"
+                class="px-3 py-1 rounded border border-neutral-700 hover:bg-neutral-800">Close</button>
+        </header>
+
+        <div class="prose prose-invert max-w-none text-sm leading-relaxed">
+            <p x-text="state.notes?.intro || ''"></p>
+
+            <div x-show="(state.notes?.beats || []).length">
+                <hr class="my-4 border-neutral-800" />
+                <h4 class="text-base font-semibold">Beat Map</h4>
+                <ol class="list-decimal pl-5 space-y-1">
+                    <template x-for="(b, i) in (state.notes?.beats || [])" :key="i">
+                        <li x-text="b"></li>
+                    </template>
+                </ol>
+            </div>
+
+            <div x-show="(state.notes?.eggs || []).length">
+                <hr class="my-4 border-neutral-800" />
+                <h4 class="text-base font-semibold">Easter Eggs</h4>
+                <ul class="list-disc pl-5 space-y-1">
+                    <template x-for="(e, i) in (state.notes?.eggs || [])" :key="i">
+                        <li x-text="e"></li>
+                    </template>
+                </ul>
+            </div>
+
+            <p x-show="!(state.notes?.intro) && !(state.notes?.beats?.length) && !(state.notes?.eggs?.length)"
+                class="text-neutral-400">No notes yet.</p>
+        </div>
+    </div>
+
+    <!-- LORE -->
+    <div x-show="openKey==='lore'" x-transition x-cloak
+        class="fixed inset-x-0 top-[12vh] z-[9999] mx-auto w-[92vw] max-w-3xl rounded-xl border border-neutral-800 bg-neutral-950 p-4 sm:p-6 shadow-xl">
+        <header class="flex items-center justify-between mb-3">
+            <h3 class="text-lg font-semibold">Character Lore</h3>
+            <button @click="close()"
+                class="px-3 py-1 rounded border border-neutral-700 hover:bg-neutral-800">Close</button>
+        </header>
+
+        <div class="space-y-4">
+            <div class="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4">
+                <div class="flex items-start gap-3">
+                    <img :src="state.lore?.portrait || asset('Leila_placeholder_001.jpg')" alt=""
+                        class="w-16 h-16 rounded object-cover border border-neutral-800"
+                        x-show="!!(state.lore?.portrait)">
+                    <div class="min-w-0">
+                        <div class="text-xs uppercase tracking-widest text-neutral-400" x-text="state.lore?.tag || ''">
+                        </div>
+                        <h4 class="font-semibold" x-text="state.lore?.name || ''"></h4>
+                        <p class="text-sm text-neutral-300 mt-1" x-text="state.lore?.bio || ''"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-3">
+                <div class="rounded-lg border border-neutral-800 p-3">
+                    <h5 class="text-sm font-semibold mb-2">Loadout</h5>
+                    <ul class="text-sm list-disc pl-5 space-y-1">
+                        <template x-for="(t, i) in (state.lore?.loadout || [])" :key="i">
+                            <li x-text="t"></li>
+                        </template>
+                    </ul>
+                    <p x-show="!(state.lore?.loadout?.length)" class="text-sm text-neutral-400">—</p>
+                </div>
+                <div class="rounded-lg border border-neutral-800 p-3">
+                    <h5 class="text-sm font-semibold mb-2">Signals</h5>
+                    <ul class="text-sm list-disc pl-5 space-y-1">
+                        <template x-for="(s, i) in (state.lore?.signals || [])" :key="i">
+                            <li x-text="s"></li>
+                        </template>
+                    </ul>
+                    <p x-show="!(state.lore?.signals?.length)" class="text-sm text-neutral-400">—</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </article>
+
+<script>
+    function chapterView(seed) {
+        return {
+            // Root UI
+            openKey: null,
+
+            // State buckets
+            state: {
+                created_at: "",
+                ambient_url: "",
+                reel_url: "",
+                sketches: [],
+                notes: {},
+                lore: {},
+            },
+
+            // Flags toggled after normalization
+            flags: {
+                hasSketches: false,
+                hasNotes: false,
+                hasLore: false,
+                hasAmbient: false,
+                hasReel: false,
+            },
+
+            // Helpers
+            assetsBase: seed?.assetsBase || "",
+            asset(key) {
+                if (!key) return "";
+                if (/^https?:\/\//i.test(key)) return key;
+                const base = (this.assetsBase || "").replace(/\/+$/, "");
+                const k = String(key).replace(/^\/+/, "");
+                return base ? `${base}/${k}` : `/${k}`;
+            },
+
+            // Lifecycle
+            init() {
+                const chapter = seed?.chapter || {};
+                let meta = seed?.meta ?? {};
+
+                // Ensure meta is an object
+                if (typeof meta === "string") { try { meta = JSON.parse(meta); } catch { meta = {}; } }
+                if (!meta || typeof meta !== "object") meta = {};
+
+                // Chapter fields
+                this.state.created_at = chapter.created_at || "";
+                this.state.ambient_url = chapter.ambient_url || "";
+                this.state.reel_url = chapter.reel_url || "";
+
+                // Sketches (strings or {src, alt?, caption?})
+                const rawSketches = Array.isArray(meta.sketches) ? meta.sketches : [];
+                this.state.sketches = rawSketches.map(s => {
+                    if (typeof s === "string") return { src: this.asset(s) };
+                    const obj = { ...(s || {}) };
+                    obj.src = this.asset(obj.src || "");
+                    return obj;
+                });
+
+                // Notes
+                this.state.notes = (meta.notes && typeof meta.notes === "object") ? meta.notes : {};
+
+                // Lore
+                const lore = (meta.lore && typeof meta.lore === "object") ? { ...meta.lore } : {};
+                if (lore.portrait) lore.portrait = this.asset(lore.portrait);
+                this.state.lore = lore;
+
+                // Flags
+                this.flags.hasSketches = this.state.sketches.length > 0;
+                const beatsLen = Array.isArray(this.state.notes?.beats) ? this.state.notes.beats.length : 0;
+                const eggsLen = Array.isArray(this.state.notes?.eggs) ? this.state.notes.eggs.length : 0;
+                this.flags.hasNotes = !!(this.state.notes?.intro || beatsLen || eggsLen);
+                this.flags.hasLore = !!(this.state.lore?.name || this.state.lore?.bio ||
+                    (this.state.lore?.loadout || []).length || (this.state.lore?.signals || []).length);
+                this.flags.hasAmbient = !!this.state.ambient_url;
+                this.flags.hasReel = !!this.state.reel_url;
+
+                // handy for console debugging
+                window.$chapter = this;
+            },
+
+            // Actions
+            open(which) { this.openKey = which; },
+            close() { this.openKey = null; },
+        }
+    }
+</script>
+
 {% endblock %}

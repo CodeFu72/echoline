@@ -11,36 +11,87 @@
     {% endif %}
 
     <form method="post" action="/admin/chapters/create" class="space-y-5">
+
+        <!-- Title -->
         <div>
             <label class="block text-sm text-neutral-300 mb-1">Title</label>
             <input name="title" required value="{{ form.title if form else '' }}" class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700
-               text-neutral-100 placeholder-neutral-500
-               focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600" placeholder="Chapter title">
+                text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+                placeholder="Chapter title">
         </div>
 
+        <!-- Subtitle -->
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Subtitle (optional)</label>
+            <input name="subtitle" value="{{ form.subtitle if form else '' }}" class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700
+                text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+                placeholder="Short tagline or extra context">
+        </div>
+
+        <!-- Slug -->
         <div>
             <label class="block text-sm text-neutral-300 mb-1">Slug (optional)</label>
             <input name="slug" value="{{ form.slug if form else '' }}" class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700
-               text-neutral-100 placeholder-neutral-500
-               focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+                text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
                 placeholder="auto-generated from title if empty">
         </div>
 
+        <!-- Display Order -->
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Display Order (optional)</label>
+            <input type="number" name="display_order" value="{{ form.display_order if form else '' }}" class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700
+                text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+                placeholder="Lower numbers appear first">
+        </div>
+
+        <!-- Hero Asset -->
         <div>
             <label class="block text-sm text-neutral-300 mb-1">Hero Asset Key (optional)</label>
             <input name="hero_key" value="{{ form.hero_key if form else '' }}" class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700
-               text-neutral-100 placeholder-neutral-500
-               focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+                text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
                 placeholder="e.g. img/chapters/ep01.webp or Leila_placeholder_001.jpg">
             <p class="text-xs text-neutral-500 mt-1">Full URL will be built as {{ ASSETS_BASE }}/&lt;hero_key&gt;.</p>
         </div>
 
+        <!-- Teaser -->
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Teaser (optional)</label>
+            <textarea name="teaser" rows="3" class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700
+                text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+                placeholder="Short preview shown in listings">{{ form.teaser if form else '' }}</textarea>
+        </div>
+
+        <!-- Body -->
         <div>
             <label class="block text-sm text-neutral-300 mb-1">Body (Markdown or HTML)</label>
             <textarea name="body" rows="12" class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700
-               text-neutral-100 placeholder-neutral-500
-               focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+                text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
                 placeholder="Write your chapter here...">{{ form.body if form else '' }}</textarea>
+        </div>
+
+        <!-- Ambient URL -->
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Ambient URL (optional)</label>
+            <input name="ambient_url" value="{{ form.ambient_url if form else '' }}" class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700
+                text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+                placeholder="https://www.youtube-nocookie.com/embed/VIDEO_ID?...">
+        </div>
+
+        <!-- Reel URL -->
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Reel URL (optional)</label>
+            <input name="reel_url" value="{{ form.reel_url if form else '' }}" class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700
+                text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+                placeholder="TikTok, IG Reel, or short video link">
+        </div>
+
+        <!-- Meta -->
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Meta JSON (optional)</label>
+            <textarea name="meta" rows="4" class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700
+                text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+                placeholder='{"sketches": ["img1.jpg"], "notes": "draft"}'>{{ form.meta if form else '' }}</textarea>
+            <p class="text-xs text-neutral-500 mt-1">For sketches, notes, extra art, etc.</p>
         </div>
 
         <button class="btn-primary">Publish</button>

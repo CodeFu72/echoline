@@ -9,20 +9,28 @@
     <section class="space-y-3">
         <div class="flex items-center justify-between">
             <h2 class="text-lg font-medium">Latest Chapters</h2>
-            <!-- We'll wire this link up next in Task 2 -->
-            <a href="/admin/chapters/new" class="px-3 py-1 rounded bg-cyan text-ink">New Chapter</a>
+            <a href="/admin/chapters/new"
+                class="px-3 py-1 rounded bg-cyan-400/20 border border-cyan-400/40 text-cyan-200 text-sm hover:bg-cyan-400/30 transition">New
+                Chapter</a>
         </div>
 
         {% if latest and latest|length > 0 %}
         <ul class="divide-y divide-neutral-800 rounded-xl border border-neutral-800 overflow-hidden">
             {% for ch in latest %}
-            <li class="p-4 flex items-center justify-between">
-                <div>
-                    <p class="font-medium">{{ ch.title }}</p>
-                    <p class="text-sm text-neutral-400">{{ ch.slug }} · {{ ch.created_at.strftime("%Y-%m-%d") }}</p>
+            <li class="p-4 flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <p class="font-medium truncate">{{ ch.title }}</p>
+                    <p class="text-sm text-neutral-400 truncate">
+                        {{ ch.slug }}{% if ch.created_at %} · {{ ch.created_at.strftime("%Y-%m-%d") }}{% endif %}
+                        {% if ch.display_order is not none %} · order {{ ch.display_order }}{% endif %}
+                    </p>
                 </div>
-                <!-- View page already exists at /chapters/{slug} -->
-                <a href="/chapters/{{ ch.slug }}" class="text-sm underline text-neutral-300 hover:text-white">View</a>
+                <div class="flex items-center gap-2 shrink-0">
+                    <a href="/chapters/{{ ch.slug }}"
+                        class="text-sm underline text-neutral-300 hover:text-white">View</a>
+                    <a href="/admin/chapters/{{ ch.id }}/edit"
+                        class="text-sm underline text-neutral-300 hover:text-white">Edit</a>
+                </div>
             </li>
             {% endfor %}
         </ul>

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+    <header class="flex items-center justify-between">
+        <h1 class="text-2xl font-semibold">Edit Chapter</h1>
+        <a href="/admin/dashboard" class="text-sm underline text-neutral-300 hover:text-white">Back to dashboard</a>
+    </header>
+
+    {% if error %}
+    <p class="text-red-400 text-sm">{{ error }}</p>
+    {% endif %}
+
+    <form method="post" action="/admin/chapters/{{ chapter.id }}/update" class="space-y-5">
+        <!-- Title -->
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Title</label>
+            <input name="title" required value="{{ chapter.title }}"
+                class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100">
+        </div>
+
+        <!-- Subtitle -->
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Subtitle</label>
+            <input name="subtitle" value="{{ chapter.subtitle or '' }}"
+                class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100">
+        </div>
+
+        <!-- Slug -->
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Slug</label>
+            <input name="slug" value="{{ chapter.slug }}"
+                class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100">
+        </div>
+
+        <!-- Display Order -->
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Display Order</label>
+            <input type="number" name="display_order"
+                value="{{ chapter.display_order if chapter.display_order is not none else '' }}"
+                class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100">
+        </div>
+
+        <!-- Hero -->
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Hero Asset Key</label>
+            <input name="hero_key" value="{{ chapter.hero_key or '' }}"
+                class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100">
+            {% if chapter.hero_key %}
+            <p class="text-xs text-neutral-500 mt-1">Preview:</p>
+            <img src="{{ asset(chapter.hero_key) }}" alt=""
+                class="mt-2 w-full max-h-48 object-cover rounded border border-neutral-800">
+            {% endif %}
+        </div>
+
+        <!-- Teaser -->
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Teaser</label>
+            <textarea name="teaser" rows="3"
+                class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100">{{ chapter.teaser or '' }}</textarea>
+        </div>
+
+        <!-- Body -->
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Body (Markdown or HTML)</label>
+            <textarea name="body" rows="12"
+                class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100">{{ chapter.content }}</textarea>
+        </div>
+
+        <!-- Ambient -->
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Ambient URL</label>
+            <input name="ambient_url" value="{{ chapter.ambient_url or '' }}"
+                class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100">
+        </div>
+
+        <!-- Reel -->
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Reel URL</label>
+            <input name="reel_url" value="{{ chapter.reel_url or '' }}"
+                class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100">
+        </div>
+
+        <!-- Meta -->
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Meta JSON</label>
+            <textarea name="meta" rows="4"
+                class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100">
+{% if chapter.meta is string %}
+{{ chapter.meta }}
+{% else %}
+{{ chapter.meta|tojson }}
+{% endif %}
+            </textarea>
+        </div>
+
+        <button class="btn-primary">Save Changes</button>
+    </form>
+</div>
+{% endblock %}

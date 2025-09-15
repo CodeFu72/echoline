@@ -8,7 +8,7 @@
     <title>{{ title or "Echo Line" }}</title>
 
     <!-- Compiled Tailwind -->
-    <link rel="stylesheet" href="/static/css/site.css?v=9" />
+    <link rel="stylesheet" href="/static/css/site.css?v=10" />
 
     <style>
         [x-cloak] {
@@ -21,26 +21,6 @@
             text-shadow: 0 1px 0 rgba(255, 255, 255, .05)
         }
 
-        /* Force home hero to stop going full-bleed on desktop */
-        .home-hero-wrap {
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        @media (min-width: 768px) {
-            .home-hero-wrap {
-                max-width: 72rem;
-            }
-
-            /* ~max-w-6xl */
-        }
-
-        .home-hero-wrap img {
-            display: block;
-            width: 100%;
-            height: auto;
-        }
-
         .neon-title::after {
             content: attr(data-text);
             position: absolute;
@@ -48,12 +28,31 @@
             color: #a5f3fc;
             filter: blur(6px) saturate(140%);
             opacity: .35;
-            pointer-events: none;
+            pointer-events: none
         }
 
         .theme-neon .neon-title::after {
             opacity: .75;
             filter: blur(12px) saturate(220%) hue-rotate(30deg)
+        }
+
+        /* Force home hero to stop going full-bleed on desktop */
+        .home-hero-wrap {
+            margin-left: auto;
+            margin-right: auto
+        }
+
+        @media (min-width:768px) {
+            .home-hero-wrap {
+                max-width: 72rem
+            }
+        }
+
+        /* ~max-w-6xl */
+        .home-hero-wrap img {
+            display: block;
+            width: 100%;
+            height: auto
         }
 
         /* Scanlines overlay (body.has-scanlines toggles) */
@@ -62,13 +61,9 @@
             position: fixed;
             inset: 0;
             z-index: 30;
-            background: repeating-linear-gradient(to bottom,
-                    rgba(255, 255, 255, .10) 0px,
-                    rgba(255, 255, 255, .10) 1px,
-                    transparent 1px,
-                    transparent 3px);
+            background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, .10) 0px, rgba(255, 255, 255, .10) 1px, transparent 1px, transparent 3px);
             mix-blend-mode: overlay;
-            opacity: .35;
+            opacity: .35
         }
 
         body:not(.has-scanlines) .scanlines {
@@ -98,25 +93,141 @@
         .theme-neon {
             --accent: 280 100% 62%;
             filter: saturate(1.06) contrast(1.04);
-            background:
-                radial-gradient(1200px 600px at 50% -20%, rgba(34, 211, 238, .08), transparent 60%),
-                #0f172a;
+            background: radial-gradient(1200px 600px at 50% -20%, rgba(34, 211, 238, .08), transparent 60%), #0f172a
         }
 
-        /* ---- SAFETY SHIM ----
-       If Tailwind purged md: utilities, ensure desktop nav still works. */
-        @media (min-width: 768px) {
+        /* SAFETY SHIM: ensure desktop nav shows even if Tailwind purged md: utilities */
+        @media (min-width:768px) {
             .md\:flex {
-                display: flex !important;
+                display: flex !important
             }
 
             .md\:hidden {
-                display: none !important;
+                display: none !important
             }
         }
     </style>
 
+    <!-- Alpine core (defer so it waits for DOM) -->
     <script defer src="/static/js/alpine.global.min.js"></script>
+
+    <!-- Define chapterExtras BEFORE Alpine boots so x-data can see it -->
+    <script>
+        window.chapterExtras = function (seed) {
+            return {
+                openKey: null,
+                hasSketches: false,
+                hasNotes: false,
+                hasLore: false,
+                hasAmbient: false,
+                hasReel: false,
+
+                assetsBase: seed?.assetsBase || "",
+
+                state: {
+                    created_at: "",
+                    ambient_url: "",
+                    reel_url: "",
+                    sketches: [],
+                    notes: {},
+                    lore: {},
+                },
+
+                asset(key) {
+                    if (!key) return "";
+                    if (/^https?:\/\//i.test(key)) return key;
+                    const base = (this.assetsBase || "").replace(/\/+$/, "");
+                    const k = String(key).replace(/^\/+/, "");
+                    return base ? `${base}/${k}` : `/${k}`;
+                },
+
+                init() {
+                    const chapter = seed?.chapter || {};
+                    let meta = seed?.meta ?? {};
+                    if (typeof meta === "string") { try { meta = JSON.parse(meta); } catch { meta = {}; } }
+                    if (!meta || typeof meta !== "object") meta = {};
+
+                    this.state.created_at = chapter.created_at || "";
+                    this.state.ambient_url = chapter.ambient_url || "";
+                    this.state.reel_url = chapter.reel_url || "";
+
+                    // sketches: array of strings or {src, alt?, caption?}
+                    const rawSketches = Array.isArray(meta.sketches) ? meta.sketches : [];
+                    this.state.sketches = rawSketches.map(s => {
+                        if (typeof s === "string") return { src: this.asset(s) };
+                        const obj = { ...(s || {}) };
+                        obj.src = this.asset(obj.src || "");
+                        return obj;
+                    });
+
+                    // notes: { intro?, beats?:[], eggs?:[] }
+                    this.state.notes = (meta.notes && typeof meta.notes === "object") ? meta.notes : {};
+
+                    // lore: { name, tag, bio, portrait, loadout:[], signals:[] }
+                    const lore = (meta.lore && typeof meta.lore === "object") ? meta.lore : {};
+                    if (lore.portrait) lore.portrait = this.asset(lore.portrait);
+                    this.state.lore = lore;
+
+                    // flags
+                    this.hasSketches = this.state.sketches.length > 0;
+                    const beatsLen = Array.isArray(this.state.notes?.beats) ? this.state.notes.beats.length : 0;
+                    const eggsLen = Array.isArray(this.state.notes?.eggs) ? this.state.notes.eggs.length : 0;
+                    this.hasNotes = !!(this.state.notes?.intro || beatsLen || eggsLen);
+                    this.hasLore = !!(this.state.lore?.name || this.state.lore?.bio ||
+                        (this.state.lore?.loadout || []).length || (this.state.lore?.signals || []).length);
+
+                    this.hasAmbient = !!this.state.ambient_url;
+                    this.hasReel = !!this.state.reel_url;
+                },
+
+                open(what) { this.openKey = what; },
+                close() { this.openKey = null; },
+            };
+        };
+
+        // Base UI used sitewide
+        window.baseUI = function () {
+            return {
+                neonOn: false, scanlinesOn: false, theme: 'theme-base',
+                lightboxSrc: null, searchOpen: false, mobileOpen: false,
+
+                init() {
+                    this.neonOn = localStorage.getItem('theme-neon') === '1';
+                    this.scanlinesOn = localStorage.getItem('scanlines') === '1';
+                    this.theme = this.neonOn ? 'theme-neon' : 'theme-base';
+                    document.body.classList.toggle('has-scanlines', this.scanlinesOn);
+
+                    window.addEventListener('keydown', (e) => {
+                        if (e.key === 't') this.toggleNeon();
+                        if (e.key === '/') { e.preventDefault(); this.openSearch(); }
+                        if (e.key === 'g') this.surge();
+                        if (e.key === 's') this.toggleScanlines();
+                    });
+
+                    window.addEventListener('toggle-neon', () => this.toggleNeon());
+                    window.addEventListener('neon-surge', () => this.surge());
+                    window.addEventListener('toggle-scanlines', () => this.toggleScanlines());
+                    window.addEventListener('open-lightbox', e => { this.lightboxSrc = e.detail || null; });
+                },
+
+                toggleNeon() {
+                    this.neonOn = !this.neonOn;
+                    this.theme = this.neonOn ? 'theme-neon' : 'theme-base';
+                    localStorage.setItem('theme-neon', this.neonOn ? '1' : '0');
+                },
+                toggleScanlines() {
+                    this.scanlinesOn = !this.scanlinesOn;
+                    document.body.classList.toggle('has-scanlines', this.scanlinesOn);
+                    localStorage.setItem('scanlines', this.scanlinesOn ? '1' : '0');
+                },
+                surge() {
+                    const el = document.querySelector('main') || document.body;
+                    el.classList.add('surge-ring'); setTimeout(() => el.classList.remove('surge-ring'), 650);
+                },
+                openSearch() { this.searchOpen = true; this.$nextTick(() => this.$refs.searchInput?.focus()); },
+            };
+        };
+    </script>
 </head>
 
 <body x-data="baseUI()" x-init="init()" :class="theme" class="min-h-screen bg-neutral-950 text-neutral-100 antialiased">
@@ -124,7 +235,6 @@
     <header
         class="sticky top-0 z-40 border-b border-neutral-900 bg-neutral-950/80 backdrop-blur supports-[backdrop-filter]:bg-neutral-950/60">
         <nav class="mx-auto max-w-6xl px-4 sm:px-6 h-14 flex items-center justify-between">
-            <!-- Brand -->
             <a href="/" class="shrink-0 font-semibold tracking-tight hover:underline decoration-dotted">Echo Line</a>
 
             <!-- Desktop links -->
@@ -133,7 +243,6 @@
                 <a href="/chapters" class="px-3 py-1 rounded hover:bg-neutral-800 transition text-sm">Chapters</a>
                 <a href="/about" class="px-3 py-1 rounded hover:bg-neutral-800 transition text-sm">About</a>
 
-                <!-- Toggles -->
                 <button @click="toggleNeon"
                     class="px-3 py-1 rounded border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 transition text-sm">
                     <span x-text="neonOn ? 'Neon: ON' : 'Neon: OFF'"></span>
@@ -188,9 +297,8 @@
                         <span x-text="scanlinesOn ? 'Scanlines: ON' : 'Scanlines: OFF'"></span>
                     </button>
                     <button @click="surge"
-                        class="rounded border border-neutral-800 bg-neutral-900/60 px-3 py-2 hover:bg-neutral-800 text-sm col-span-2">
-                        Surge ⚡
-                    </button>
+                        class="rounded border border-neutral-800 bg-neutral-900/60 px-3 py-2 hover:bg-neutral-800 text-sm col-span-2">Surge
+                        ⚡</button>
                     <button @click="openSearch"
                         class="rounded border border-neutral-800 bg-neutral-900/60 px-3 py-2 hover:bg-neutral-800 text-sm col-span-2">
                         Search <kbd class="ml-1 text-neutral-500">/</kbd>
@@ -233,56 +341,6 @@
             </div>
         </div>
     </template>
-
-    <script>
-        function baseUI() {
-            return {
-                neonOn: false,
-                scanlinesOn: false,
-                theme: 'theme-base',
-                lightboxSrc: null,
-                searchOpen: false,
-                mobileOpen: false,
-
-                init() {
-                    this.neonOn = localStorage.getItem('theme-neon') === '1';
-                    this.scanlinesOn = localStorage.getItem('scanlines') === '1';
-                    this.theme = this.neonOn ? 'theme-neon' : 'theme-base';
-                    document.body.classList.toggle('has-scanlines', this.scanlinesOn);
-
-                    window.addEventListener('keydown', (e) => {
-                        if (e.key === 't') this.toggleNeon();
-                        if (e.key === '/') { e.preventDefault(); this.openSearch(); }
-                        if (e.key === 'g') this.surge();
-                        if (e.key === 's') this.toggleScanlines();
-                    });
-
-                    window.addEventListener('toggle-neon', () => this.toggleNeon());
-                    window.addEventListener('neon-surge', () => this.surge());
-                    window.addEventListener('toggle-scanlines', () => this.toggleScanlines());
-                    window.addEventListener('open-lightbox', e => { this.lightboxSrc = e.detail || null });
-                },
-
-                toggleNeon() {
-                    this.neonOn = !this.neonOn;
-                    this.theme = this.neonOn ? 'theme-neon' : 'theme-base';
-                    localStorage.setItem('theme-neon', this.neonOn ? '1' : '0');
-                },
-                toggleScanlines() {
-                    this.scanlinesOn = !this.scanlinesOn;
-                    document.body.classList.toggle('has-scanlines', this.scanlinesOn);
-                    localStorage.setItem('scanlines', this.scanlinesOn ? '1' : '0');
-                },
-                surge() {
-                    const el = document.querySelector('main') || document.body;
-                    el.classList.add('surge-ring'); setTimeout(() => el.classList.remove('surge-ring'), 650);
-                },
-                openSearch() {
-                    this.searchOpen = true; this.$nextTick(() => this.$refs.searchInput?.focus());
-                },
-            }
-        }
-    </script>
 </body>
 
 </html>

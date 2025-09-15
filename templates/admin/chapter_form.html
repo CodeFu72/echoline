@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+    <header class="flex items-center justify-between">
+        <h1 class="text-2xl font-semibold">
+            {% if mode == 'edit' %}Edit Chapter{% else %}New Chapter{% endif %}
+        </h1>
+        <a href="/admin/dashboard" class="text-sm underline text-neutral-300 hover:text-white">Back to dashboard</a>
+    </header>
+
+    {% if error %}
+    <p class="text-red-400 text-sm">{{ error }}</p>
+    {% endif %}
+
+    <form method="post"
+        action="{% if mode == 'edit' %}/admin/chapters/{{ chapter.id }}/update{% else %}/admin/chapters/create{% endif %}"
+        class="space-y-5">
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Title</label>
+            <input name="title" required value="{{ form.title or '' }}"
+                class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+                placeholder="Chapter title">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm text-neutral-300 mb-1">Slug (optional)</label>
+                <input name="slug" value="{{ form.slug or '' }}"
+                    class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+                    placeholder="auto-generated from title if empty">
+            </div>
+            <div>
+                <label class="block text-sm text-neutral-300 mb-1">Order (optional)</label>
+                <input name="order" type="number" value="{{ form.order or '' }}"
+                    class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+                    placeholder="e.g. 1">
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Hero Asset Key (optional)</label>
+            <input name="hero_key" value="{{ form.hero_key or '' }}"
+                class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+                placeholder="e.g. hero/01_hero.jpg or Leila_placeholder_001.jpg">
+            <p class="text-xs text-neutral-500 mt-1">Full URL resolves via <code>asset()</code>: either absolute URL or
+                {{ ASSETS_BASE }}/&lt;key&gt;.</p>
+        </div>
+
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Body (Markdown or HTML)</label>
+            <textarea name="body" rows="10"
+                class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+                placeholder="Write your chapter here...">{{ form.body or '' }}</textarea>
+        </div>
+
+        <div>
+            <label class="block text-sm text-neutral-300 mb-1">Meta (JSON)</label>
+            <textarea name="meta_text" rows="10"
+                class="font-mono text-sm w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+                placeholder='{
+  "sketches": [
+    {"thumb": "art/ep01/thumb-1.jpg", "full": "art/ep01/full-1.jpg", "caption": "Rooftop study"}
+  ],
+  "notes": [{"title":"Signal drift","body":"…"}],
+  "lore": [{"term":"Static","body":"…"}]
+}'>{{ form.meta_text or '' }}</textarea>
+            <p class="text-xs text-neutral-500 mt-1">Provide valid JSON. Leave blank if not needed.</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button class="px-4 py-2 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-black font-semibold">
+                {% if mode == 'edit' %}Save Changes{% else %}Publish{% endif %}
+            </button>
+            {% if mode == 'edit' %}
+            <a href="/chapters/{{ chapter.slug }}"
+                class="px-4 py-2 rounded-lg border border-neutral-700 hover:bg-neutral-800">View</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+{% endblock %}
