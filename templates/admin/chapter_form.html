@@ -1,58 +1,152 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="max-w-3xl mx-auto space-y-6">
-    <header class="flex items-center justify-between">
-        <h1 class="text-2xl font-semibold">
-            {% if mode == 'edit' %}Edit Chapter{% else %}New Chapter{% endif %}
-        </h1>
-        <a href="/admin/dashboard" class="text-sm underline text-neutral-300 hover:text-white">Back to dashboard</a>
-    </header>
+  <header class="flex items-center justify-between">
+    <h1 class="text-2xl font-semibold">
+      {% if mode == 'edit' %}Edit Chapter{% else %}New Chapter{% endif %}
+    </h1>
+    <a href="/admin/dashboard" class="text-sm underline text-neutral-300 hover:text-white">Back to dashboard</a>
+  </header>
 
-    {% if error %}<p class="text-red-400 text-sm">{{ error }}</p>{% endif %}
+  {% if error %}<p class="text-red-400 text-sm">{{ error }}</p>{% endif %}
 
-    <form method="post"
+  <form method="post"
         action="{% if mode == 'edit' %}/admin/chapters/{{ chapter.id }}/update{% else %}/admin/chapters/create{% endif %}"
         class="space-y-5">
-        <div>
-            <label class="block text-sm text-neutral-300 mb-1">Title</label>
-            <input name="title" required value="{{ form.title or '' }}"
-                class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
-                placeholder="Chapter title">
-        </div>
+    <div>
+      <label class="block text-sm text-neutral-300 mb-1">Title</label>
+      <input name="title" required value="{{ form.title or '' }}"
+             class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+             placeholder="Chapter title">
+    </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm text-neutral-300 mb-1">Slug (optional)</label>
-                <input name="slug" value="{{ form.slug or '' }}"
-                    class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
-                    placeholder="auto-generated from title if empty">
-            </div>
-            <div>
-                <label class="block text-sm text-neutral-300 mb-1">Order (optional)</label>
-                <input name="order" type="number" value="{{ form.order or '' }}"
-                    class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
-                    placeholder="e.g. 1">
-            </div>
-        </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm text-neutral-300 mb-1">Slug (optional)</label>
+        <input name="slug" value="{{ form.slug or '' }}"
+               class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+               placeholder="auto-generated from title if empty">
+      </div>
+      <div>
+        <label class="block text-sm text-neutral-300 mb-1">Order (optional)</label>
+        <input name="order" type="number" value="{{ form.order or '' }}"
+               class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+               placeholder="e.g. 1">
+      </div>
+    </div>
 
-        <div>
-            <label class="block text-sm text-neutral-300 mb-1">Hero Asset Key (optional)</label>
-            <input name="hero_key" value="{{ form.hero_key or '' }}"
-                class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
-                placeholder="e.g. hero/01_hero.jpg or Leila_placeholder_001.jpg">
-            <p class="text-xs text-neutral-500 mt-1">Full URL resolves via <code>asset()</code>: either absolute URL or {{ ASSETS_BASE }}/&lt;key&gt;.</p>
-        </div>
+    <div>
+      <label class="block text-sm text-neutral-300 mb-1">Hero Asset Key (optional)</label>
+      <input name="hero_key" value="{{ form.hero_key or '' }}"
+             class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+             placeholder="e.g. hero/01_hero.jpg or Leila_placeholder_001.jpg">
+      <p class="text-xs text-neutral-500 mt-1">
+        Full URL resolves via <code>asset()</code>: either absolute URL or {{ ASSETS_BASE }}/&lt;key&gt;.
+      </p>
+    </div>
 
-        <div>
-            <label class="block text-sm text-neutral-300 mb-1">Body (Markdown or HTML)</label>
-            <textarea name="body" rows="10"
+    <div>
+      <label class="block text-sm text-neutral-300 mb-1">Body (Markdown or HTML)</label>
+      <textarea name="body" rows="10"
                 class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
                 placeholder="Write your chapter here...">{{ form.body or '' }}</textarea>
+    </div>
+
+    <!-- =====================  EXTRAS PAGES & UPLOADS (HELPER)  ===================== -->
+    <section class="rounded-xl border border-neutral-800 bg-neutral-900/40 p-4 sm:p-5 space-y-4">
+      <h2 class="text-lg font-semibold">Extras Pages & Uploads (Helper)</h2>
+      <p class="text-sm text-neutral-400">
+        These helpers write into <code>Meta (JSON)</code> for you under <code>extras</code>. You can also edit it manually.
+      </p>
+
+      <!-- Standalone page URLs -->
+      <div class="grid sm:grid-cols-3 gap-3">
+        <div>
+          <label class="block text-xs text-neutral-400 mb-1">Notes page URL</label>
+          <input id="inp-notes-url" type="url" placeholder="https://…/extras/ep01/notes.html"
+                 class="w-full rounded-lg p-2.5 bg-neutral-900 border border-neutral-700" />
+          <button type="button" class="mt-2 text-xs px-2 py-1 rounded border border-neutral-700 hover:bg-neutral-800"
+                  onclick="insertIntoMeta({ path:['extras','notes_page'], value: document.getElementById('inp-notes-url').value })">
+            Insert into Meta
+          </button>
+        </div>
+        <div>
+          <label class="block text-xs text-neutral-400 mb-1">Lore page URL</label>
+          <input id="inp-lore-url" type="url" placeholder="https://…/extras/ep01/chez.html"
+                 class="w-full rounded-lg p-2.5 bg-neutral-900 border border-neutral-700" />
+          <button type="button" class="mt-2 text-xs px-2 py-1 rounded border border-neutral-700 hover:bg-neutral-800"
+                  onclick="insertIntoMeta({ path:['extras','lore_page'], value: document.getElementById('inp-lore-url').value })">
+            Insert into Meta
+          </button>
+        </div>
+        <div>
+          <label class="block text-xs text-neutral-400 mb-1">Sketches page URL</label>
+          <input id="inp-sketches-url" type="url" placeholder="https://…/extras/ep01/sketches.html"
+                 class="w-full rounded-lg p-2.5 bg-neutral-900 border border-neutral-700" />
+          <button type="button" class="mt-2 text-xs px-2 py-1 rounded border border-neutral-700 hover:bg-neutral-800"
+                  onclick="insertIntoMeta({ path:['extras','sketches_page'], value: document.getElementById('inp-sketches-url').value })">
+            Insert into Meta
+          </button>
+        </div>
+      </div>
+
+      <hr class="border-neutral-800" />
+
+      <!-- Uploader -->
+      <div class="space-y-3">
+        <h3 class="font-medium">Upload to bucket</h3>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-neutral-400 mb-1">Choose file</label>
+            <input id="upl-file" type="file"
+                   class="w-full rounded-lg p-2.5 bg-neutral-900 border border-neutral-700" />
+          </div>
+          <div>
+            <label class="block text-xs text-neutral-400 mb-1">Save as (key within bucket)</label>
+            <input id="upl-key" type="text" placeholder="extras/ep01/chez.html or art/ep01/panel_01.jpg"
+                   class="w-full rounded-lg p-2.5 bg-neutral-900 border border-neutral-700" />
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button"
+                  class="px-3 py-2 rounded-lg border border-neutral-700 hover:bg-neutral-800 text-sm"
+                  onclick="doUpload()">
+            Upload
+          </button>
+          <span id="upl-status" class="text-sm text-neutral-400"></span>
         </div>
 
-        <div>
-            <label class="block text-sm text-neutral-300 mb-1">Meta (JSON)</label>
-            <textarea name="meta_text" rows="10"
+        <div id="upl-result" class="hidden rounded-lg border border-neutral-800 bg-neutral-900/40 p-3 text-sm">
+          <div class="break-all">
+            <strong>Public URL:</strong>
+            <a id="upl-public-url" href="#" target="_blank" class="underline text-teal-300"></a>
+          </div>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <button type="button" class="px-2 py-1 text-xs rounded border border-neutral-700 hover:bg-neutral-800"
+                    onclick="insertSketch()">
+              + Add to <code>sketches</code> in Meta
+            </button>
+            <button type="button" class="px-2 py-1 text-xs rounded border border-neutral-700 hover:bg-neutral-800"
+                    onclick="insertIntoMeta({ path:['extras','lore_page'], value: window.__lastUploadPublicUrl })">
+              Set as <code>extras.lore_page</code>
+            </button>
+            <button type="button" class="px-2 py-1 text-xs rounded border border-neutral-700 hover:bg-neutral-800"
+                    onclick="insertIntoMeta({ path:['extras','notes_page'], value: window.__lastUploadPublicUrl })">
+              Set as <code>extras.notes_page</code>
+            </button>
+            <button type="button" class="px-2 py-1 text-xs rounded border border-neutral-700 hover:bg-neutral-800"
+                    onclick="insertIntoMeta({ path:['extras','sketches_page'], value: window.__lastUploadPublicUrl })">
+              Set as <code>extras.sketches_page</code>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- =====================  /EXTRAS PAGES & UPLOADS  ===================== -->
+
+    <div>
+      <label class="block text-sm text-neutral-300 mb-1">Meta (JSON)</label>
+      <textarea id="meta-textarea" name="meta_text" rows="12"
                 class="font-mono text-sm w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
                 placeholder='{
   "sketches": [
@@ -71,19 +165,108 @@
     "portrait": "characters/leila/portrait_01.jpg",
     "loadout": ["RF sniffer", "Lockpick loop"],
     "signals": ["Echo memory"]
+  },
+  "extras": {
+    "notes_page": "https://…/extras/ep01/notes.html",
+    "lore_page": "https://…/extras/ep01/chez.html",
+    "sketches_page": "https://…/extras/ep01/sketches.html"
   }
-}'>{{ form.meta_text or '' }}</textarea>
-            <p class="text-xs text-neutral-500 mt-1">Provide valid JSON. Leave blank if not needed.</p>
-        </div>
+}'>{% if form.meta_text %}{{ form.meta_text }}{% endif %}</textarea>
+      <p class="text-xs text-neutral-500 mt-1">Provide valid JSON. Leave blank if not needed.</p>
+    </div>
 
-        <div class="flex items-center gap-3">
-            <button class="px-4 py-2 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-black font-semibold">
-                {% if mode == 'edit' %}Save Changes{% else %}Publish{% endif %}
-            </button>
-            {% if mode == 'edit' %}
-            <a href="/chapters/{{ chapter.slug }}" class="px-4 py-2 rounded-lg border border-neutral-700 hover:bg-neutral-800">View</a>
-            {% endif %}
-        </div>
-    </form>
+    <div class="flex items-center gap-3">
+      <button class="px-4 py-2 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-black font-semibold">
+        {% if mode == 'edit' %}Save Changes{% else %}Publish{% endif %}
+      </button>
+      {% if mode == 'edit' %}
+      <a href="/chapters/{{ chapter.slug }}" class="px-4 py-2 rounded-lg border border-neutral-700 hover:bg-neutral-800">View</a>
+      {% endif %}
+    </div>
+  </form>
 </div>
+
+<script>
+  function readMeta() {
+    const ta = document.getElementById('meta-textarea');
+    try { return JSON.parse(ta.value || '{}') || {}; } catch { return {}; }
+  }
+  function writeMeta(obj) {
+    const ta = document.getElementById('meta-textarea');
+    ta.value = JSON.stringify(obj, null, 2);
+  }
+  function setDeep(obj, path, value) {
+    let cur = obj;
+    for (let i = 0; i < path.length - 1; i++) {
+      const k = path[i];
+      if (!cur[k] || typeof cur[k] !== 'object') cur[k] = {};
+      cur = cur[k];
+    }
+    cur[path[path.length-1]] = value;
+    return obj;
+  }
+  function insertIntoMeta({ path, value }) {
+    if (!value) return;
+    const meta = readMeta();
+    writeMeta(setDeep(meta, path, value));
+  }
+  function insertSketch() {
+    const url = window.__lastUploadPublicUrl;
+    if (!url) return;
+    const meta = readMeta();
+    if (!Array.isArray(meta.sketches)) meta.sketches = [];
+    // store bucket-relative key if it matches ASSETS_BASE, else absolute url
+    const base = "{{ ASSETS_BASE }}".replace(/\/+$/,'');
+    let toStore = url;
+    if (base && url.startsWith(base + "/")) {
+      toStore = url.slice((base + "/").length);
+    }
+    meta.sketches.push(typeof toStore === 'string' ? toStore : String(toStore));
+    writeMeta(meta);
+  }
+
+  async function doUpload() {
+    const file = document.getElementById('upl-file').files?.[0];
+    const key = document.getElementById('upl-key').value.trim();
+    const status = document.getElementById('upl-status');
+    const resBox = document.getElementById('upl-result');
+    const link = document.getElementById('upl-public-url');
+
+    resBox.classList.add('hidden');
+    link.textContent = ''; link.href = '#';
+    status.textContent = '';
+
+    if (!file) { status.textContent = 'Choose a file.'; return; }
+    if (!key) { status.textContent = 'Enter a destination key.'; return; }
+
+    try {
+      status.textContent = 'Requesting upload URL…';
+      const presign = await fetch('/admin/uploads/presign', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ key, content_type: file.type || 'application/octet-stream' })
+      }).then(r => r.json());
+
+      if (!presign?.upload_url) throw new Error('No upload URL returned');
+
+      status.textContent = 'Uploading…';
+      const put = await fetch(presign.upload_url, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        body: file
+      });
+
+      if (!put.ok) throw new Error('Upload failed with ' + put.status);
+
+      status.textContent = 'Uploaded ✓';
+      window.__lastUploadPublicUrl = presign.public_url;
+      link.textContent = presign.public_url;
+      link.href = presign.public_url;
+      resBox.classList.remove('hidden');
+    } catch (err) {
+      console.error(err);
+      status.textContent = 'Error: ' + (err?.message || err);
+    }
+  }
+</script>
 {% endblock %}

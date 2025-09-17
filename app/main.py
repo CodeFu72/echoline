@@ -4,13 +4,18 @@ import hashlib
 import markdown2
 from dotenv import load_dotenv
 
-from fastapi import FastAPI, Request, Depends
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request, Depends, Body
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from sqlalchemy.orm import Session
+
+# S3 presign
+import boto3
+from botocore.client import Config as BotoConfig
+from botocore.exceptions import BotoCoreError, ClientError
 
 # Load env vars (.env)
 load_dotenv()
@@ -30,8 +35,6 @@ app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY", "dev-se
 # ---- Static & Templates ----
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
-
-# Make the templates object available to routers
 app.state.templates = templates
 
 # ---- Jinja helpers (single source of truth) ----
@@ -39,11 +42,7 @@ ASSETS_BASE = os.getenv("ASSETS_BASE_URL", "").rstrip("/")
 templates.env.globals["ASSETS_BASE"] = ASSETS_BASE
 
 def asset(key: str) -> str:
-    """
-    Build a full asset URL.
-    - Absolute URLs (http/https) are returned unchanged.
-    - Otherwise, prefix with ASSETS_BASE if set, else /static/.
-    """
+    """Build a full asset URL (absolute kept; otherwise ASSETS_BASE or /static)."""
     if not key:
         return ""
     k = key.strip()
@@ -62,29 +61,78 @@ def md_filter(text: str) -> str:
 
 templates.env.filters["md"] = md_filter
 
-# Optional ambient: YouTube embed URL
+# Optional ambient
 templates.env.globals["YT_AMBIENT_URL"] = os.getenv("YT_AMBIENT_URL", "")
 
-# ---- CSS cache-busting without client JS (prevents flash) ----
+# ---- CSS cache-busting (no client JS) ----
 def _static_file_version(path: str) -> str:
-    """
-    Return a short hash (or mtime fallback) for cache-busting.
-    We compute it once per process start; no per-request JS rewriting.
-    """
     try:
         with open(path, "rb") as f:
-            h = hashlib.sha1(f.read()).hexdigest()[:10]
-            return h
+            return hashlib.sha1(f.read()).hexdigest()[:10]
     except Exception:
         try:
-            mtime = os.path.getmtime(path)
-            return str(int(mtime))
+            return str(int(os.path.getmtime(path)))
         except Exception:
             return "dev"
 
 SITE_CSS_PATH = os.path.join("static", "css", "site.css")
 STATIC_VERSION = _static_file_version(SITE_CSS_PATH)
 templates.env.globals["STATIC_VERSION"] = STATIC_VERSION
+
+# ---- S3 / Linode Object Storage presign ----
+S3_BUCKET = os.getenv("S3_BUCKET", "")
+S3_REGION = os.getenv("S3_REGION", "")
+S3_ENDPOINT = os.getenv("S3_ENDPOINT", "")  # https://us-southeast-1.linodeobjects.com
+S3_ACCESS_KEY = os.getenv("S3_ACCESS_KEY", "")
+S3_SECRET_KEY = os.getenv("S3_SECRET_KEY", "")
+
+def _s3_client():
+    if not (S3_REGION and S3_ENDPOINT and S3_ACCESS_KEY and S3_SECRET_KEY):
+        raise RuntimeError("S3 env is missing. Check S3_REGION, S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY.")
+    return boto3.client(
+        "s3",
+        region_name=S3_REGION,
+        endpoint_url=S3_ENDPOINT,
+        aws_access_key_id=S3_ACCESS_KEY,
+        aws_secret_access_key=S3_SECRET_KEY,
+        config=BotoConfig(s3={"addressing_style": "virtual"})
+    )
+
+def _presign_put(key: str, content_type: str, expires: int = 300) -> dict:
+    """Return {'upload_url', 'public_url'} for a direct PUT upload."""
+    s3 = _s3_client()
+    try:
+        upload_url = s3.generate_presigned_url(
+            ClientMethod="put_object",
+            Params={
+                "Bucket": S3_BUCKET,
+                "Key": key,
+                "ContentType": content_type or "application/octet-stream",
+                "ACL": "public-read",
+            },
+            ExpiresIn=expires,
+        )
+    except (BotoCoreError, ClientError) as e:
+        raise RuntimeError(f"Presign failed: {e}") from e
+
+    public_url = f"{ASSETS_BASE.rstrip('/')}/{key.lstrip('/')}" if ASSETS_BASE else f"{S3_ENDPOINT.rstrip('/')}/{S3_BUCKET}/{key.lstrip('/')}"
+    return {"upload_url": upload_url, "public_url": public_url}
+
+@app.post("/admin/uploads/presign")
+def presign_upload(payload: dict = Body(...)):
+    """
+    Request body: {"key":"path/in/bucket/file.ext","content_type":"type"}
+    Returns: {"upload_url":"...","public_url":"..."}
+    """
+    key = (payload or {}).get("key", "").strip()
+    ctype = (payload or {}).get("content_type", "application/octet-stream")
+    if not key:
+        return JSONResponse({"error": "Missing key"}, status_code=400)
+    try:
+        out = _presign_put(key, ctype)
+        return JSONResponse(out)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 # -----------------------
 
