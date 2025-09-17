@@ -1,5 +1,6 @@
 # app/main.py
 import os
+import hashlib
 import markdown2
 from dotenv import load_dotenv
 
@@ -62,8 +63,28 @@ def md_filter(text: str) -> str:
 templates.env.filters["md"] = md_filter
 
 # Optional ambient: YouTube embed URL
-# e.g. https://www.youtube-nocookie.com/embed/VIDEO_ID?autoplay=1&loop=1&playlist=VIDEO_ID
 templates.env.globals["YT_AMBIENT_URL"] = os.getenv("YT_AMBIENT_URL", "")
+
+# ---- CSS cache-busting without client JS (prevents flash) ----
+def _static_file_version(path: str) -> str:
+    """
+    Return a short hash (or mtime fallback) for cache-busting.
+    We compute it once per process start; no per-request JS rewriting.
+    """
+    try:
+        with open(path, "rb") as f:
+            h = hashlib.sha1(f.read()).hexdigest()[:10]
+            return h
+    except Exception:
+        try:
+            mtime = os.path.getmtime(path)
+            return str(int(mtime))
+        except Exception:
+            return "dev"
+
+SITE_CSS_PATH = os.path.join("static", "css", "site.css")
+STATIC_VERSION = _static_file_version(SITE_CSS_PATH)
+templates.env.globals["STATIC_VERSION"] = STATIC_VERSION
 
 # -----------------------
 

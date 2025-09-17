@@ -59,6 +59,8 @@ index.html
 pages
 
 # templates/admin
+chapter_edit.html
+chapter_form.html
 chapter_new.html
 dashboard.html
 login.html
