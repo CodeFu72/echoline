@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 
-<!-- 1) Seed JSON -->
+<!-- Seed JSON -->
 <script id="chapter-seed" type="application/json">
 {{ {
   "assetsBase": (ASSETS_BASE or ''),
@@ -16,7 +16,6 @@
 } | tojson }}
 </script>
 
-<!-- 2) Expose seed before Alpine evaluates -->
 <script>
   (function () {
     const el = document.getElementById('chapter-seed');
@@ -204,6 +203,18 @@
         No sketches yet.
       </li>
     </ul>
+
+    <!-- Full page link (if provided) -->
+    <div x-show="(window.CHAPTER_SEED?.meta?.extras?.sketches_page || '')"
+         class="mt-4 text-right">
+      <a :href="window.CHAPTER_SEED.meta.extras.sketches_page" target="_blank" rel="noopener"
+         class="inline-flex items-center gap-2 text-sm underline text-teal-300 hover:text-teal-200">
+        Open full sketches page
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M7 17L17 7M10 7h7v7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+    </div>
   </div>
 
   <!-- NOTES -->
@@ -239,6 +250,17 @@
 
       <p x-show="!(state.notes?.intro) && !(state.notes?.beats?.length) && !(state.notes?.eggs?.length)"
          class="text-neutral-400">No notes yet.</p>
+    </div>
+
+    <div x-show="(window.CHAPTER_SEED?.meta?.extras?.notes_page || '')"
+         class="mt-4 text-right">
+      <a :href="window.CHAPTER_SEED.meta.extras.notes_page" target="_blank" rel="noopener"
+         class="inline-flex items-center gap-2 text-sm underline text-teal-300 hover:text-teal-200">
+        Open full notes page
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M7 17L17 7M10 7h7v7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
     </div>
   </div>
 
@@ -284,6 +306,17 @@
           <p x-show="!(state.lore?.signals?.length)" class="text-sm text-neutral-400">—</p>
         </div>
       </div>
+    </div>
+
+    <div x-show="(window.CHAPTER_SEED?.meta?.extras?.lore_page || '')"
+         class="mt-4 text-right">
+      <a :href="window.CHAPTER_SEED.meta.extras.lore_page" target="_blank" rel="noopener"
+         class="inline-flex items-center gap-2 text-sm underline text-teal-300 hover:text-teal-200">
+        Open full character page
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M7 17L17 7M10 7h7v7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
     </div>
   </div>
 

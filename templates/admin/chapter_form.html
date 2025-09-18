@@ -13,50 +13,87 @@
   <form method="post"
         action="{% if mode == 'edit' %}/admin/chapters/{{ chapter.id }}/update{% else %}/admin/chapters/create{% endif %}"
         class="space-y-5">
-    <div>
-      <label class="block text-sm text-neutral-300 mb-1">Title</label>
-      <input name="title" required value="{{ form.title or '' }}"
-             class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
-             placeholder="Chapter title">
+
+    <!-- Title / Subtitle -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="sm:col-span-2">
+        <label class="block text-sm text-neutral-300 mb-1">Title</label>
+        <input name="title" required value="{{ form.title or chapter.title or '' }}"
+               class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+               placeholder="Chapter title">
+      </div>
+      <div class="sm:col-span-2">
+        <label class="block text-sm text-neutral-300 mb-1">Subtitle (optional)</label>
+        <input name="subtitle" value="{{ form.subtitle or chapter.subtitle or '' }}"
+               class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+               placeholder="Short tagline or extra context">
+      </div>
     </div>
 
+    <!-- Slug / Order -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
         <label class="block text-sm text-neutral-300 mb-1">Slug (optional)</label>
-        <input name="slug" value="{{ form.slug or '' }}"
+        <input name="slug" value="{{ form.slug or chapter.slug or '' }}"
                class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
                placeholder="auto-generated from title if empty">
       </div>
       <div>
-        <label class="block text-sm text-neutral-300 mb-1">Order (optional)</label>
-        <input name="order" type="number" value="{{ form.order or '' }}"
+        <label class="block text-sm text-neutral-300 mb-1">Display Order (optional)</label>
+        <input name="display_order" type="number" value="{{ form.display_order or chapter.display_order or '' }}"
                class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
-               placeholder="e.g. 1">
+               placeholder="Lower numbers appear first">
       </div>
     </div>
 
+    <!-- Hero -->
     <div>
       <label class="block text-sm text-neutral-300 mb-1">Hero Asset Key (optional)</label>
-      <input name="hero_key" value="{{ form.hero_key or '' }}"
+      <input name="hero_key" value="{{ form.hero_key or chapter.hero_key or '' }}"
              class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
-             placeholder="e.g. hero/01_hero.jpg or Leila_placeholder_001.jpg">
+             placeholder="e.g. img/chapters/ep01.webp or Leila_placeholder_001.jpg">
       <p class="text-xs text-neutral-500 mt-1">
         Full URL resolves via <code>asset()</code>: either absolute URL or {{ ASSETS_BASE }}/&lt;key&gt;.
       </p>
     </div>
 
+    <!-- Teaser -->
+    <div>
+      <label class="block text-sm text-neutral-300 mb-1">Teaser (optional)</label>
+      <input name="teaser" value="{{ form.teaser or chapter.teaser or '' }}"
+             class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+             placeholder="Short preview shown in listings">
+    </div>
+
+    <!-- Body -->
     <div>
       <label class="block text-sm text-neutral-300 mb-1">Body (Markdown or HTML)</label>
       <textarea name="body" rows="10"
                 class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
-                placeholder="Write your chapter here...">{{ form.body or '' }}</textarea>
+                placeholder="Write your chapter here...">{{ form.body or chapter.content or '' }}</textarea>
+    </div>
+
+    <!-- Ambient / Reel -->
+    <div class="grid grid-cols-1 gap-4">
+      <div>
+        <label class="block text-sm text-neutral-300 mb-1">Ambient URL (optional)</label>
+        <input name="ambient_url" value="{{ form.ambient_url or chapter.ambient_url or '' }}"
+               class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+               placeholder="https://www.youtube-nocookie.com/embed/VIDEO_ID?...">
+      </div>
+      <div>
+        <label class="block text-sm text-neutral-300 mb-1">Reel URL (optional)</label>
+        <input name="reel_url" value="{{ form.reel_url or chapter.reel_url or '' }}"
+               class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+               placeholder="TikTok, IG Reel, or short video link">
+      </div>
     </div>
 
     <!-- =====================  EXTRAS PAGES & UPLOADS (HELPER)  ===================== -->
     <section class="rounded-xl border border-neutral-800 bg-neutral-900/40 p-4 sm:p-5 space-y-4">
       <h2 class="text-lg font-semibold">Extras Pages & Uploads (Helper)</h2>
       <p class="text-sm text-neutral-400">
-        These helpers write into <code>Meta (JSON)</code> for you under <code>extras</code>. You can also edit it manually.
+        These helpers write into <code>Meta (JSON)</code> under <code>extras</code>. You can also edit it manually.
       </p>
 
       <!-- Standalone page URLs -->
@@ -92,13 +129,13 @@
 
       <hr class="border-neutral-800" />
 
-      <!-- Uploader -->
+      <!-- Uploader (presigned PUT) -->
       <div class="space-y-3">
         <h3 class="font-medium">Upload to bucket</h3>
         <div class="grid sm:grid-cols-2 gap-3">
           <div>
             <label class="block text-xs text-neutral-400 mb-1">Choose file</label>
-            <input id="upl-file" type="file"
+            <input id="upl-file" type="file" accept="image/*,text/html"
                    class="w-full rounded-lg p-2.5 bg-neutral-900 border border-neutral-700" />
           </div>
           <div>
@@ -144,34 +181,16 @@
     </section>
     <!-- =====================  /EXTRAS PAGES & UPLOADS  ===================== -->
 
+    <!-- Meta -->
     <div>
       <label class="block text-sm text-neutral-300 mb-1">Meta (JSON)</label>
-      <textarea id="meta-textarea" name="meta_text" rows="12"
+      <textarea id="meta-textarea" name="meta" rows="12"
                 class="font-mono text-sm w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
                 placeholder='{
-  "sketches": [
-    {"src": "art/ep01/panel_01.jpg", "caption": "Rooftop study"},
-    "art/ep01/panel_02.jpg"
-  ],
-  "notes": {
-    "intro": "Why this chapter matters…",
-    "beats": ["Inciting shove", "Lockdown trigger", "Escape vector"],
-    "eggs": ["Billboard code hides a cipher"]
-  },
-  "lore": {
-    "tag": "Echo Line",
-    "name": "Leila",
-    "bio": "Smuggler. Signal thief.",
-    "portrait": "characters/leila/portrait_01.jpg",
-    "loadout": ["RF sniffer", "Lockpick loop"],
-    "signals": ["Echo memory"]
-  },
-  "extras": {
-    "notes_page": "https://…/extras/ep01/notes.html",
-    "lore_page": "https://…/extras/ep01/chez.html",
-    "sketches_page": "https://…/extras/ep01/sketches.html"
-  }
-}'>{% if form.meta_text %}{{ form.meta_text }}{% endif %}</textarea>
+  "sketches": ["art/ep01/panel_01.jpg"],
+  "notes": {"intro": "Why this chapter matters…"},
+  "extras": {"lore_page": "https://…/extras/ep01/chez.html"}
+}'>{{ form.meta or (chapter.meta | tojson if chapter and chapter.meta else '') }}</textarea>
       <p class="text-xs text-neutral-500 mt-1">Provide valid JSON. Leave blank if not needed.</p>
     </div>
 
@@ -218,16 +237,14 @@
     // store bucket-relative key if it matches ASSETS_BASE, else absolute url
     const base = "{{ ASSETS_BASE }}".replace(/\/+$/,'');
     let toStore = url;
-    if (base && url.startsWith(base + "/")) {
-      toStore = url.slice((base + "/").length);
-    }
-    meta.sketches.push(typeof toStore === 'string' ? toStore : String(toStore));
+    if (base && url.startsWith(base + "/")) toStore = url.slice((base + "/").length);
+    meta.sketches.push(toStore);
     writeMeta(meta);
   }
 
   async function doUpload() {
     const file = document.getElementById('upl-file').files?.[0];
-    const key = document.getElementById('upl-key').value.trim();
+    const key = document.getElementById('upl-key').value.trim().replace(/^\/+/, '');
     const status = document.getElementById('upl-status');
     const resBox = document.getElementById('upl-result');
     const link = document.getElementById('upl-public-url');
@@ -237,31 +254,65 @@
     status.textContent = '';
 
     if (!file) { status.textContent = 'Choose a file.'; return; }
-    if (!key) { status.textContent = 'Enter a destination key.'; return; }
+    if (!key)  { status.textContent = 'Enter a destination key.'; return; }
 
+    const ctype = file.type || (key.match(/\.jpe?g$/i) ? 'image/jpeg'
+                        : key.match(/\.png$/i) ? 'image/png'
+                        : key.match(/\.webp$/i) ? 'image/webp'
+                        : key.match(/\.html?$/i) ? 'text/html'
+                        : 'application/octet-stream');
+
+    // 1) Presigned PUT
     try {
       status.textContent = 'Requesting upload URL…';
       const presign = await fetch('/admin/uploads/presign', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ key, content_type: file.type || 'application/octet-stream' })
+        body: JSON.stringify({ key, content_type: ctype })
       }).then(r => r.json());
 
-      if (!presign?.upload_url) throw new Error('No upload URL returned');
+      if (!presign?.upload_url) throw new Error(presign?.error || 'No upload URL');
 
       status.textContent = 'Uploading…';
       const put = await fetch(presign.upload_url, {
         method: 'PUT',
-        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        headers: { 'Content-Type': ctype },
         body: file
       });
 
-      if (!put.ok) throw new Error('Upload failed with ' + put.status);
+      if (!put.ok) {
+        let t = ''; try { t = await put.text(); } catch {}
+        console.warn('PUT failed', put.status, t);
+        throw new Error('PUT ' + put.status);
+      }
 
       status.textContent = 'Uploaded ✓';
       window.__lastUploadPublicUrl = presign.public_url;
       link.textContent = presign.public_url;
       link.href = presign.public_url;
+      resBox.classList.remove('hidden');
+      return;
+    } catch (e) {
+      console.warn('Presigned PUT path failed:', e);
+      status.textContent = 'Presigned upload blocked; falling back…';
+    }
+
+    // 2) Fallback: same-origin multipart POST
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('key', key);
+
+      status.textContent = 'Uploading via server…';
+      const resp = await fetch('/admin/uploads/upload', { method: 'POST', body: fd });
+      const json = await resp.json();
+
+      if (!resp.ok) throw new Error(json?.detail || 'Upload failed');
+
+      status.textContent = 'Uploaded ✓';
+      window.__lastUploadPublicUrl = json.public_url;
+      link.textContent = json.public_url;
+      link.href = json.public_url;
       resBox.classList.remove('hidden');
     } catch (err) {
       console.error(err);

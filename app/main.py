@@ -37,7 +37,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 app.state.templates = templates
 
-# ---- Jinja helpers (single source of truth) ----
+# ---- Jinja helpers ----
 ASSETS_BASE = os.getenv("ASSETS_BASE_URL", "").rstrip("/")
 templates.env.globals["ASSETS_BASE"] = ASSETS_BASE
 
@@ -82,25 +82,34 @@ templates.env.globals["STATIC_VERSION"] = STATIC_VERSION
 # ---- S3 / Linode Object Storage presign ----
 S3_BUCKET = os.getenv("S3_BUCKET", "")
 S3_REGION = os.getenv("S3_REGION", "")
-S3_ENDPOINT = os.getenv("S3_ENDPOINT", "")  # https://us-southeast-1.linodeobjects.com
+S3_ENDPOINT = os.getenv("S3_ENDPOINT", "")  # e.g. https://us-southeast-1.linodeobjects.com
 S3_ACCESS_KEY = os.getenv("S3_ACCESS_KEY", "")
 S3_SECRET_KEY = os.getenv("S3_SECRET_KEY", "")
 
 def _s3_client():
-    if not (S3_REGION and S3_ENDPOINT and S3_ACCESS_KEY and S3_SECRET_KEY):
-        raise RuntimeError("S3 env is missing. Check S3_REGION, S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY.")
+    if not (S3_REGION and S3_ENDPOINT and S3_ACCESS_KEY and S3_SECRET_KEY and S3_BUCKET):
+        raise RuntimeError("S3 env is missing. Check S3_REGION, S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET.")
     return boto3.client(
         "s3",
         region_name=S3_REGION,
         endpoint_url=S3_ENDPOINT,
         aws_access_key_id=S3_ACCESS_KEY,
         aws_secret_access_key=S3_SECRET_KEY,
-        config=BotoConfig(s3={"addressing_style": "virtual"})
+        config=BotoConfig(s3={"addressing_style": "virtual"})  # bucket subdomain style
     )
 
+def _public_url_for(key: str) -> str:
+    key = key.lstrip("/")
+    return f"{ASSETS_BASE.rstrip('/')}/{key}" if ASSETS_BASE else f"{S3_ENDPOINT.rstrip('/')}/{S3_BUCKET}/{key}"
+
 def _presign_put(key: str, content_type: str, expires: int = 300) -> dict:
-    """Return {'upload_url', 'public_url'} for a direct PUT upload."""
+    """
+    Return {'upload_url', 'public_url'} for a direct PUT upload.
+    NOTE: No ACL in signature (avoids needing extra headers on the PUT).
+    Make sure your bucket policy permits public read, or serve via ASSETS_BASE.
+    """
     s3 = _s3_client()
+    key = key.lstrip("/")
     try:
         upload_url = s3.generate_presigned_url(
             ClientMethod="put_object",
@@ -108,20 +117,19 @@ def _presign_put(key: str, content_type: str, expires: int = 300) -> dict:
                 "Bucket": S3_BUCKET,
                 "Key": key,
                 "ContentType": content_type or "application/octet-stream",
-                "ACL": "public-read",
+                # No 'ACL' here -> no need to send x-amz-acl from the browser
             },
             ExpiresIn=expires,
         )
     except (BotoCoreError, ClientError) as e:
         raise RuntimeError(f"Presign failed: {e}") from e
 
-    public_url = f"{ASSETS_BASE.rstrip('/')}/{key.lstrip('/')}" if ASSETS_BASE else f"{S3_ENDPOINT.rstrip('/')}/{S3_BUCKET}/{key.lstrip('/')}"
-    return {"upload_url": upload_url, "public_url": public_url}
+    return {"upload_url": upload_url, "public_url": _public_url_for(key)}
 
 @app.post("/admin/uploads/presign")
 def presign_upload(payload: dict = Body(...)):
     """
-    Request body: {"key":"path/in/bucket/file.ext","content_type":"type"}
+    Body: {"key":"path/in/bucket/file.ext","content_type":"type"}
     Returns: {"upload_url":"...","public_url":"..."}
     """
     key = (payload or {}).get("key", "").strip()
