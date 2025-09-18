@@ -1,5 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
+{# ---- SAFE DEFAULTS ---- #}
+{% set mode = mode|default('new') %}
+{% set chapter = chapter|default({}) %}
+{% set form = form|default({}) %}
+{% set ASSETS_BASE = ASSETS_BASE|default('') %}
+
 <div class="max-w-3xl mx-auto space-y-6">
   <header class="flex items-center justify-between">
     <h1 class="text-2xl font-semibold">
@@ -11,22 +17,22 @@
   {% if error %}<p class="text-red-400 text-sm">{{ error }}</p>{% endif %}
 
   <form method="post"
-        action="{% if mode == 'edit' %}/admin/chapters/{{ chapter.id }}/update{% else %}/admin/chapters/create{% endif %}"
-        class="space-y-5">
+    action="{% if mode == 'edit' and chapter.id %}/admin/chapters/{{ chapter.id }}/update{% else %}/admin/chapters/create{% endif %}"
+    class="space-y-5">
 
     <!-- Title / Subtitle -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="sm:col-span-2">
         <label class="block text-sm text-neutral-300 mb-1">Title</label>
         <input name="title" required value="{{ form.title or chapter.title or '' }}"
-               class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
-               placeholder="Chapter title">
+          class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+          placeholder="Chapter title">
       </div>
       <div class="sm:col-span-2">
         <label class="block text-sm text-neutral-300 mb-1">Subtitle (optional)</label>
         <input name="subtitle" value="{{ form.subtitle or chapter.subtitle or '' }}"
-               class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
-               placeholder="Short tagline or extra context">
+          class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+          placeholder="Short tagline or extra context">
       </div>
     </div>
 
@@ -35,14 +41,14 @@
       <div>
         <label class="block text-sm text-neutral-300 mb-1">Slug (optional)</label>
         <input name="slug" value="{{ form.slug or chapter.slug or '' }}"
-               class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
-               placeholder="auto-generated from title if empty">
+          class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+          placeholder="auto-generated from title if empty">
       </div>
       <div>
         <label class="block text-sm text-neutral-300 mb-1">Display Order (optional)</label>
         <input name="display_order" type="number" value="{{ form.display_order or chapter.display_order or '' }}"
-               class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
-               placeholder="Lower numbers appear first">
+          class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+          placeholder="Lower numbers appear first">
       </div>
     </div>
 
@@ -50,8 +56,8 @@
     <div>
       <label class="block text-sm text-neutral-300 mb-1">Hero Asset Key (optional)</label>
       <input name="hero_key" value="{{ form.hero_key or chapter.hero_key or '' }}"
-             class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
-             placeholder="e.g. img/chapters/ep01.webp or Leila_placeholder_001.jpg">
+        class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+        placeholder="e.g. img/chapters/ep01.webp or Leila_placeholder_001.jpg">
       <p class="text-xs text-neutral-500 mt-1">
         Full URL resolves via <code>asset()</code>: either absolute URL or {{ ASSETS_BASE }}/&lt;key&gt;.
       </p>
@@ -61,16 +67,16 @@
     <div>
       <label class="block text-sm text-neutral-300 mb-1">Teaser (optional)</label>
       <input name="teaser" value="{{ form.teaser or chapter.teaser or '' }}"
-             class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
-             placeholder="Short preview shown in listings">
+        class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+        placeholder="Short preview shown in listings">
     </div>
 
     <!-- Body -->
     <div>
       <label class="block text-sm text-neutral-300 mb-1">Body (Markdown or HTML)</label>
       <textarea name="body" rows="10"
-                class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
-                placeholder="Write your chapter here...">{{ form.body or chapter.content or '' }}</textarea>
+        class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+        placeholder="Write your chapter here...">{{ form.body or chapter.content or '' }}</textarea>
     </div>
 
     <!-- Ambient / Reel -->
@@ -78,14 +84,14 @@
       <div>
         <label class="block text-sm text-neutral-300 mb-1">Ambient URL (optional)</label>
         <input name="ambient_url" value="{{ form.ambient_url or chapter.ambient_url or '' }}"
-               class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
-               placeholder="https://www.youtube-nocookie.com/embed/VIDEO_ID?...">
+          class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+          placeholder="https://www.youtube-nocookie.com/embed/VIDEO_ID?...">
       </div>
       <div>
         <label class="block text-sm text-neutral-300 mb-1">Reel URL (optional)</label>
         <input name="reel_url" value="{{ form.reel_url or chapter.reel_url or '' }}"
-               class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
-               placeholder="TikTok, IG Reel, or short video link">
+          class="w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+          placeholder="TikTok, IG Reel, or short video link">
       </div>
     </div>
 
@@ -101,27 +107,27 @@
         <div>
           <label class="block text-xs text-neutral-400 mb-1">Notes page URL</label>
           <input id="inp-notes-url" type="url" placeholder="https://…/extras/ep01/notes.html"
-                 class="w-full rounded-lg p-2.5 bg-neutral-900 border border-neutral-700" />
+            class="w-full rounded-lg p-2.5 bg-neutral-900 border border-neutral-700" />
           <button type="button" class="mt-2 text-xs px-2 py-1 rounded border border-neutral-700 hover:bg-neutral-800"
-                  onclick="insertIntoMeta({ path:['extras','notes_page'], value: document.getElementById('inp-notes-url').value })">
+            onclick="insertIntoMeta({ path:['extras','notes_page'], value: document.getElementById('inp-notes-url').value })">
             Insert into Meta
           </button>
         </div>
         <div>
           <label class="block text-xs text-neutral-400 mb-1">Lore page URL</label>
           <input id="inp-lore-url" type="url" placeholder="https://…/extras/ep01/chez.html"
-                 class="w-full rounded-lg p-2.5 bg-neutral-900 border border-neutral-700" />
+            class="w-full rounded-lg p-2.5 bg-neutral-900 border border-neutral-700" />
           <button type="button" class="mt-2 text-xs px-2 py-1 rounded border border-neutral-700 hover:bg-neutral-800"
-                  onclick="insertIntoMeta({ path:['extras','lore_page'], value: document.getElementById('inp-lore-url').value })">
+            onclick="insertIntoMeta({ path:['extras','lore_page'], value: document.getElementById('inp-lore-url').value })">
             Insert into Meta
           </button>
         </div>
         <div>
           <label class="block text-xs text-neutral-400 mb-1">Sketches page URL</label>
           <input id="inp-sketches-url" type="url" placeholder="https://…/extras/ep01/sketches.html"
-                 class="w-full rounded-lg p-2.5 bg-neutral-900 border border-neutral-700" />
+            class="w-full rounded-lg p-2.5 bg-neutral-900 border border-neutral-700" />
           <button type="button" class="mt-2 text-xs px-2 py-1 rounded border border-neutral-700 hover:bg-neutral-800"
-                  onclick="insertIntoMeta({ path:['extras','sketches_page'], value: document.getElementById('inp-sketches-url').value })">
+            onclick="insertIntoMeta({ path:['extras','sketches_page'], value: document.getElementById('inp-sketches-url').value })">
             Insert into Meta
           </button>
         </div>
@@ -136,18 +142,17 @@
           <div>
             <label class="block text-xs text-neutral-400 mb-1">Choose file</label>
             <input id="upl-file" type="file" accept="image/*,text/html"
-                   class="w-full rounded-lg p-2.5 bg-neutral-900 border border-neutral-700" />
+              class="w-full rounded-lg p-2.5 bg-neutral-900 border border-neutral-700" />
           </div>
           <div>
             <label class="block text-xs text-neutral-400 mb-1">Save as (key within bucket)</label>
             <input id="upl-key" type="text" placeholder="extras/ep01/chez.html or art/ep01/panel_01.jpg"
-                   class="w-full rounded-lg p-2.5 bg-neutral-900 border border-neutral-700" />
+              class="w-full rounded-lg p-2.5 bg-neutral-900 border border-neutral-700" />
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <button type="button"
-                  class="px-3 py-2 rounded-lg border border-neutral-700 hover:bg-neutral-800 text-sm"
-                  onclick="doUpload()">
+          <button type="button" class="px-3 py-2 rounded-lg border border-neutral-700 hover:bg-neutral-800 text-sm"
+            onclick="doUpload()">
             Upload
           </button>
           <span id="upl-status" class="text-sm text-neutral-400"></span>
@@ -160,19 +165,19 @@
           </div>
           <div class="mt-2 flex flex-wrap gap-2">
             <button type="button" class="px-2 py-1 text-xs rounded border border-neutral-700 hover:bg-neutral-800"
-                    onclick="insertSketch()">
+              onclick="insertSketch()">
               + Add to <code>sketches</code> in Meta
             </button>
             <button type="button" class="px-2 py-1 text-xs rounded border border-neutral-700 hover:bg-neutral-800"
-                    onclick="insertIntoMeta({ path:['extras','lore_page'], value: window.__lastUploadPublicUrl })">
+              onclick="insertIntoMeta({ path:['extras','lore_page'], value: window.__lastUploadPublicUrl })">
               Set as <code>extras.lore_page</code>
             </button>
             <button type="button" class="px-2 py-1 text-xs rounded border border-neutral-700 hover:bg-neutral-800"
-                    onclick="insertIntoMeta({ path:['extras','notes_page'], value: window.__lastUploadPublicUrl })">
+              onclick="insertIntoMeta({ path:['extras','notes_page'], value: window.__lastUploadPublicUrl })">
               Set as <code>extras.notes_page</code>
             </button>
             <button type="button" class="px-2 py-1 text-xs rounded border border-neutral-700 hover:bg-neutral-800"
-                    onclick="insertIntoMeta({ path:['extras','sketches_page'], value: window.__lastUploadPublicUrl })">
+              onclick="insertIntoMeta({ path:['extras','sketches_page'], value: window.__lastUploadPublicUrl })">
               Set as <code>extras.sketches_page</code>
             </button>
           </div>
@@ -185,12 +190,12 @@
     <div>
       <label class="block text-sm text-neutral-300 mb-1">Meta (JSON)</label>
       <textarea id="meta-textarea" name="meta" rows="12"
-                class="font-mono text-sm w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
-                placeholder='{
+        class="font-mono text-sm w-full rounded-lg p-3 bg-neutral-900 border border-neutral-700 text-neutral-100 placeholder-neutral-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-600"
+        placeholder='{
   "sketches": ["art/ep01/panel_01.jpg"],
   "notes": {"intro": "Why this chapter matters…"},
   "extras": {"lore_page": "https://…/extras/ep01/chez.html"}
-}'>{{ form.meta or (chapter.meta | tojson if chapter and chapter.meta else '') }}</textarea>
+}'>{{ form.meta or (chapter.meta | tojson if chapter.meta is defined and chapter.meta else '') }}</textarea>
       <p class="text-xs text-neutral-500 mt-1">Provide valid JSON. Leave blank if not needed.</p>
     </div>
 
@@ -198,8 +203,9 @@
       <button class="px-4 py-2 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-black font-semibold">
         {% if mode == 'edit' %}Save Changes{% else %}Publish{% endif %}
       </button>
-      {% if mode == 'edit' %}
-      <a href="/chapters/{{ chapter.slug }}" class="px-4 py-2 rounded-lg border border-neutral-700 hover:bg-neutral-800">View</a>
+      {% if mode == 'edit' and chapter.slug %}
+      <a href="/chapters/{{ chapter.slug }}"
+        class="px-4 py-2 rounded-lg border border-neutral-700 hover:bg-neutral-800">View</a>
       {% endif %}
     </div>
   </form>
@@ -221,7 +227,7 @@
       if (!cur[k] || typeof cur[k] !== 'object') cur[k] = {};
       cur = cur[k];
     }
-    cur[path[path.length-1]] = value;
+    cur[path[path.length - 1]] = value;
     return obj;
   }
   function insertIntoMeta({ path, value }) {
@@ -235,7 +241,7 @@
     const meta = readMeta();
     if (!Array.isArray(meta.sketches)) meta.sketches = [];
     // store bucket-relative key if it matches ASSETS_BASE, else absolute url
-    const base = "{{ ASSETS_BASE }}".replace(/\/+$/,'');
+    const base = "{{ ASSETS_BASE }}".replace(/\/+$/, '');
     let toStore = url;
     if (base && url.startsWith(base + "/")) toStore = url.slice((base + "/").length);
     meta.sketches.push(toStore);
@@ -254,20 +260,20 @@
     status.textContent = '';
 
     if (!file) { status.textContent = 'Choose a file.'; return; }
-    if (!key)  { status.textContent = 'Enter a destination key.'; return; }
+    if (!key) { status.textContent = 'Enter a destination key.'; return; }
 
     const ctype = file.type || (key.match(/\.jpe?g$/i) ? 'image/jpeg'
-                        : key.match(/\.png$/i) ? 'image/png'
-                        : key.match(/\.webp$/i) ? 'image/webp'
-                        : key.match(/\.html?$/i) ? 'text/html'
-                        : 'application/octet-stream');
+      : key.match(/\.png$/i) ? 'image/png'
+        : key.match(/\.webp$/i) ? 'image/webp'
+          : key.match(/\.html?$/i) ? 'text/html'
+            : 'application/octet-stream');
 
     // 1) Presigned PUT
     try {
       status.textContent = 'Requesting upload URL…';
       const presign = await fetch('/admin/uploads/presign', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key, content_type: ctype })
       }).then(r => r.json());
 
@@ -281,7 +287,7 @@
       });
 
       if (!put.ok) {
-        let t = ''; try { t = await put.text(); } catch {}
+        let t = ''; try { t = await put.text(); } catch { }
         console.warn('PUT failed', put.status, t);
         throw new Error('PUT ' + put.status);
       }

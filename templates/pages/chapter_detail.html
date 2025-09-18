@@ -27,7 +27,7 @@
 </script>
 
 <article x-data="chapterExtras(window.CHAPTER_SEED)" x-init="init()"
-         class="mx-auto max-w-5xl px-4 sm:px-6 py-6 space-y-8">
+  class="mx-auto max-w-5xl px-4 sm:px-6 py-6 space-y-8">
 
   <!-- Header -->
   <header class="text-center space-y-3">
@@ -41,48 +41,19 @@
 
     {% if chapter.hero_key %}
     <img src="{{ asset(chapter.hero_key) }}" alt="{{ chapter.title }}"
-         class="mt-4 w-full rounded-xl border border-neutral-800 bg-neutral-900/40 object-cover md:max-h-[560px]"
-         loading="eager" decoding="async" />
+      class="mt-4 w-full rounded-xl border border-neutral-800 bg-neutral-900/40 object-cover md:max-h-[560px]"
+      loading="eager" decoding="async" />
     {% endif %}
   </header>
 
   <!-- Ambient / Reel -->
-  <section x-show="hasAmbient || hasReel" x-cloak
-           class="rounded-xl border border-neutral-800 bg-neutral-900/40 p-3 sm:p-4">
-    <div class="flex flex-col gap-3">
-      <template x-if="hasAmbient">
-        <div class="flex items-center justify-between gap-3">
-          <div class="text-sm text-neutral-400">Ambient</div>
-          <div class="flex items-center gap-2">
-            <button x-show="!state._ambientOn" @click="state._ambientOn = true"
-              class="inline-flex h-9 items-center justify-center rounded-full bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 px-3 text-sm">
-              Enable ambient
-            </button>
-            <button x-show="state._ambientOn" @click="state._ambientOn = false"
-              class="inline-flex h-9 items-center justify-center rounded-full bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 px-3 text-sm">
-              Disable
-            </button>
-          </div>
-        </div>
-      </template>
-
-      <div x-show="state._ambientOn" x-transition x-cloak
-           class="w-full aspect-video rounded-lg overflow-hidden border border-neutral-800 bg-black">
-        <iframe
-          :src="`${state.ambient_url}${state.ambient_url.includes('?') ? '&' : '?'}controls=0&modestbranding=1&rel=0&playsinline=1&iv_load_policy=3`"
-          title="Ambient" allow="autoplay; encrypted-media; picture-in-picture"
-          referrerpolicy="strict-origin-when-cross-origin" allowfullscreen loading="lazy"
-          class="w-full h-full"></iframe>
-      </div>
-
-      <template x-if="hasReel">
-        <div class="flex items-center justify-center">
-          <a :href="state.reel_url" target="_blank" rel="noopener"
-             class="inline-flex h-11 items-center justify-center rounded-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-5 transition">
-            Watch the Reel
-          </a>
-        </div>
-      </template>
+  <!-- Reel only -->
+  <section x-show="hasReel" x-cloak class="rounded-xl border border-neutral-800 bg-neutral-900/40 p-3 sm:p-4">
+    <div class="flex flex-col items-center justify-center">
+      <a :href="state.reel_url" target="_blank" rel="noopener"
+        class="inline-flex h-11 items-center justify-center rounded-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-5 transition">
+        Watch the Reel
+      </a>
     </div>
   </section>
 
@@ -94,8 +65,7 @@
   <hr class="my-8 border-neutral-800" />
 
   <!-- ===== Bonus Content cards (SAFE: separate Alpine component) ===== -->
-  <section
-    x-data="(() => {
+  <section x-data="(() => {
       const seed = window.CHAPTER_SEED || {};
       const ex = (seed.meta && seed.meta.extras) || {};
       const assetsBase = (seed.assetsBase || '').replace(/\/+$/, '');
@@ -141,20 +111,17 @@
         });
       }
       return { cards };
-    })()"
-    x-show="cards.length"
-    x-cloak
-    class="space-y-3"
-  >
+    })()" x-show="cards.length" x-cloak class="space-y-3">
     <h2 class="text-lg font-semibold">Bonus Content</h2>
     <ul role="list" class="grid gap-3 sm:grid-cols-2">
       <template x-for="card in cards" :key="card.href">
         <li>
           <a :href="card.href" target="_blank" rel="noopener"
-             class="block rounded-xl border border-neutral-800 bg-neutral-900/40 hover:bg-neutral-900 transition overflow-hidden">
+            class="block rounded-xl border border-neutral-800 bg-neutral-900/40 hover:bg-neutral-900 transition overflow-hidden">
             <div class="flex items-stretch">
-              <div class="hidden sm:block w-36 h-24 shrink-0 border-r border-neutral-800 bg-neutral-950/40">
-                <img :src="card.thumb || ''" alt="" class="w-full h-full object-cover" x-show="!!card.thumb">
+              <div class="hidden sm:block w-36 h-24 shrink-0 border-r border-neutral-800 bg-neutral-950/40" :style="card.thumb
+    ? `background-image:url('${card.thumb}');background-size:cover;background-position:center;`
+    : ''">
               </div>
               <div class="p-4 min-w-0">
                 <div class="text-sm uppercase tracking-widest text-neutral-400" x-text="card.kicker"></div>
@@ -176,21 +143,21 @@
       <div class="flex flex-wrap items-center gap-2">
         <template x-if="hasSketches">
           <button @click="open('sketches')"
-                  class="inline-flex h-11 items-center justify-center rounded-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-5 transition">
+            class="inline-flex h-11 items-center justify-center rounded-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-5 transition">
             View Sketches
           </button>
         </template>
 
         <template x-if="hasNotes">
           <button @click="open('notes')"
-                  class="inline-flex h-11 items-center justify-center rounded-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-5 transition">
+            class="inline-flex h-11 items-center justify-center rounded-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-5 transition">
             Read Notes
           </button>
         </template>
 
         <template x-if="hasLore">
           <button @click="open('lore')"
-                  class="inline-flex h-11 items-center justify-center rounded-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-5 transition">
+            class="inline-flex h-11 items-center justify-center rounded-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-5 transition">
             Character Lore
           </button>
         </template>
@@ -204,13 +171,12 @@
 
   <!-- NAV -->
   <nav class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3"
-       aria-label="Chapter navigation">
+    aria-label="Chapter navigation">
     {% if prev %}
     <a href="/chapters/{{ prev.slug }}"
-       class="group inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition">
-      <svg xmlns="http://www.w3.org/2000/svg"
-           class="h-4 w-4 transition -translate-x-0.5 group-hover:-translate-x-1" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" aria-hidden="true">
+      class="group inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition -translate-x-0.5 group-hover:-translate-x-1"
+        viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
         <path d="M15 18l-6-6 6-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
       <span class="text-sm">
@@ -219,30 +185,32 @@
       </span>
     </a>
     {% else %}
-    <span class="inline-flex items-center gap-2 rounded-lg border border-neutral-900 bg-neutral-950/50 px-4 py-2 text-neutral-600 cursor-default select-none">
+    <span
+      class="inline-flex items-center gap-2 rounded-lg border border-neutral-900 bg-neutral-950/50 px-4 py-2 text-neutral-600 cursor-default select-none">
       Previous
     </span>
     {% endif %}
 
     <a href="/chapters"
-       class="inline-flex items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition text-sm">
+      class="inline-flex items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition text-sm">
       All Chapters
     </a>
 
     {% if next %}
     <a href="/chapters/{{ next.slug }}"
-       class="group inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition">
+      class="group inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-900/50 px-4 py-2 hover:bg-neutral-800 transition">
       <span class="text-sm text-right">
         <span class="block text-neutral-400">Next</span>
         <span class="block font-medium text-white truncate max-w-[16rem]">{{ next.title }}</span>
       </span>
       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition translate-x-0.5 group-hover:translate-x-1"
-           viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+        viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
         <path d="M9 6l6 6-6 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
     </a>
     {% else %}
-    <span class="inline-flex items-center gap-2 rounded-lg border border-neutral-900 bg-neutral-950/50 px-4 py-2 text-neutral-600 cursor-default select-none">
+    <span
+      class="inline-flex items-center gap-2 rounded-lg border border-neutral-900 bg-neutral-950/50 px-4 py-2 text-neutral-600 cursor-default select-none">
       Next
     </span>
     {% endif %}
@@ -251,13 +219,12 @@
   <!-- === MODALS (inline; no teleport) === -->
 
   <!-- Backdrop -->
-  <div x-show="openKey !== null" x-transition.opacity x-cloak
-       class="fixed inset-0 z-[9998] bg-black/70"
-       @click.self="close()" @keydown.escape.window="close()"></div>
+  <div x-show="openKey !== null" x-transition.opacity x-cloak class="fixed inset-0 z-[9998] bg-black/70"
+    @click.self="close()" @keydown.escape.window="close()"></div>
 
   <!-- SKETCHES -->
   <div :class="openKey==='sketches' ? '' : 'hidden'"
-       class="fixed inset-x-0 top-[8vh] z-[9999] mx-auto w-[92vw] max-w-5xl rounded-xl border border-neutral-800 bg-neutral-950 p-4 sm:p-6 shadow-xl">
+    class="fixed inset-x-0 top-[8vh] z-[9999] mx-auto w-[92vw] max-w-5xl rounded-xl border border-neutral-800 bg-neutral-950 p-4 sm:p-6 shadow-xl">
     <header class="flex items-center justify-between mb-3">
       <h3 class="text-lg font-semibold">Sketches &amp; Panels</h3>
       <button @click="close()" class="px-3 py-1 rounded border border-neutral-700 hover:bg-neutral-800">Close</button>
@@ -267,9 +234,10 @@
       <template x-for="(img, idx) in (state.sketches || [])" :key="img?.src || idx">
         <li>
           <button @click="$dispatch('open-lightbox', img?.src || '')"
-                  class="block w-full aspect-[4/3] overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900/40 hover:bg-neutral-900"
-                  :disabled="!img?.src">
-            <img :src="img?.src || ''" :alt="img?.alt || 'Sketch'" class="w-full h-full object-cover" loading="lazy" decoding="async">
+            class="block w-full aspect-[4/3] overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900/40 hover:bg-neutral-900"
+            :disabled="!img?.src">
+            <img :src="img?.src || ''" :alt="img?.alt || 'Sketch'" class="w-full h-full object-cover" loading="lazy"
+              decoding="async">
           </button>
           <p class="mt-1 text-xs text-neutral-400" x-text="img?.caption || ''"></p>
         </li>
@@ -283,7 +251,7 @@
 
   <!-- NOTES -->
   <div :class="openKey==='notes' ? '' : 'hidden'"
-       class="fixed inset-x-0 top-[10vh] z-[9999] mx-auto w-[92vw] max-w-3xl rounded-xl border border-neutral-800 bg-neutral-950 p-4 sm:p-6 shadow-xl">
+    class="fixed inset-x-0 top-[10vh] z-[9999] mx-auto w-[92vw] max-w-3xl rounded-xl border border-neutral-800 bg-neutral-950 p-4 sm:p-6 shadow-xl">
     <header class="flex items-center justify-between mb-3">
       <h3 class="text-lg font-semibold">Author Notes</h3>
       <button @click="close()" class="px-3 py-1 rounded border border-neutral-700 hover:bg-neutral-800">Close</button>
@@ -313,13 +281,13 @@
       </div>
 
       <p x-show="!(state.notes?.intro) && !(state.notes?.beats?.length) && !(state.notes?.eggs?.length)"
-         class="text-neutral-400">No notes yet.</p>
+        class="text-neutral-400">No notes yet.</p>
     </div>
   </div>
 
   <!-- LORE -->
   <div :class="openKey==='lore' ? '' : 'hidden'"
-       class="fixed inset-x-0 top-[12vh] z-[9999] mx-auto w-[92vw] max-w-3xl rounded-xl border border-neutral-800 bg-neutral-950 p-4 sm:p-6 shadow-xl">
+    class="fixed inset-x-0 top-[12vh] z-[9999] mx-auto w-[92vw] max-w-3xl rounded-xl border border-neutral-800 bg-neutral-950 p-4 sm:p-6 shadow-xl">
     <header class="flex items-center justify-between mb-3">
       <h3 class="text-lg font-semibold">Character Lore</h3>
       <button @click="close()" class="px-3 py-1 rounded border border-neutral-700 hover:bg-neutral-800">Close</button>
@@ -328,9 +296,8 @@
     <div class="space-y-4">
       <div class="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4">
         <div class="flex items-start gap-3">
-          <img :src="state.lore?.portrait || ''" alt=""
-               class="w-16 h-16 rounded object-cover border border-neutral-800"
-               x-show="!!(state.lore?.portrait)">
+          <img :src="state.lore?.portrait || ''" alt="" class="w-16 h-16 rounded object-cover border border-neutral-800"
+            x-show="!!(state.lore?.portrait)">
           <div class="min-w-0">
             <div class="text-xs uppercase tracking-widest text-neutral-400" x-text="state.lore?.tag || ''"></div>
             <h4 class="font-semibold" x-text="state.lore?.name || ''"></h4>
@@ -341,7 +308,7 @@
         <!-- Safe CTA: link out to standalone lore page if present -->
         <div x-show="window.CHAPTER_SEED?.meta?.extras?.lore_page" class="mt-3">
           <a :href="window.CHAPTER_SEED.meta.extras.lore_page" target="_blank" rel="noopener"
-             class="inline-flex h-10 items-center justify-center rounded-full border border-neutral-700 bg-neutral-900/60 hover:bg-neutral-800 px-4 text-sm">
+            class="inline-flex h-10 items-center justify-center rounded-full border border-neutral-700 bg-neutral-900/60 hover:bg-neutral-800 px-4 text-sm">
             Open full character page
           </a>
         </div>
