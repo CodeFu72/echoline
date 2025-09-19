@@ -1,7 +1,179 @@
 {% extends "base.html" %}
+
+{% set meta_description = "Kirk Fuson—visual artist & storyteller behind Echo Line. Cyberpunk grit with a human heart;
+inspired by Gibson, Stephenson, Bradbury, London, and films like Blade Runner, Three Days of the Condor, and Heat." %}
+
 {% block content %}
-<h1 class="text-3xl font-semibold">About Echo Line</h1>
-<p class="mt-3 text-neutral-300">
-    A YA cyberpunk novel experience with art, ambient loops, and unlockable chapters.
-</p>
+<section class="mx-auto max-w-3xl px-4 sm:px-6 py-6 space-y-8">
+    <header class="text-center space-y-4">
+        <h1 class="neon-title text-3xl sm:text-4xl font-extrabold tracking-tight" data-text="About">About</h1>
+        <p class="text-neutral-400 text-sm">Directly to readers.</p>
+
+        {# ===== Neon Alley Portrait (magenta/cyan + rain) ===== #}
+        <style>
+            /* keyframes live here so we don't touch site.css */
+            @keyframes rainSlide {
+                0% {
+                    transform: translateY(-30%)
+                }
+
+                100% {
+                    transform: translateY(0)
+                }
+            }
+
+            @keyframes shimmer {
+
+                0%,
+                100% {
+                    opacity: .25
+                }
+
+                50% {
+                    opacity: .45
+                }
+            }
+
+            #neo-portrait {
+                --tilt: 0deg;
+                --px: 0px;
+                --py: 0px;
+                position: relative;
+                aspect-ratio: 4 / 5;
+                min-height: 360px;
+                border-radius: 18px;
+                overflow: hidden;
+                border: 1px solid #262626;
+                transform: perspective(900px) rotateZ(var(--tilt));
+                transition: transform .35s ease, filter .35s ease, box-shadow .35s ease;
+                box-shadow:
+                    0 10px 40px rgba(255, 0, 170, .12),
+                    0 6px 18px rgba(0, 255, 255, .08);
+            }
+
+            #neo-portrait .img {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                transform: translate3d(var(--px), var(--py), 0) scale(1.02);
+                filter: contrast(106%) saturate(108%);
+            }
+
+            #neo-portrait::before,
+            #neo-portrait::after {
+                content: "";
+                position: absolute;
+                inset: -10%;
+                pointer-events: none;
+            }
+
+            #neo-portrait::before {
+                background:
+                    radial-gradient(900px 600px at 8% 30%, rgba(255, 0, 204, .35), transparent 60%),
+                    radial-gradient(700px 500px at 95% 80%, rgba(0, 255, 255, .25), transparent 60%);
+                mix-blend-mode: screen;
+                filter: blur(6px);
+            }
+
+            #neo-portrait .rain {
+                position: absolute;
+                inset: -30% -10% 0 -10%;
+                background:
+                    linear-gradient(180deg, rgba(255, 255, 255, .12), rgba(255, 255, 255, 0)) 0 0/2px 28px,
+                    linear-gradient(180deg, rgba(255, 255, 255, .10), rgba(255, 255, 255, 0)) 20px 0/1px 22px,
+                    linear-gradient(180deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, 0)) 40px 0/2px 30px;
+                opacity: .25;
+                transform: skewX(-12deg);
+                animation: rainSlide 1.8s linear infinite;
+                mix-blend-mode: overlay;
+            }
+
+            #neo-portrait .gloss {
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(190deg, rgba(255, 255, 255, .08), transparent 40%),
+                    linear-gradient(to right, rgba(255, 0, 170, .10), rgba(0, 255, 255, .10));
+                mix-blend-mode: soft-light;
+                animation: shimmer 4.5s ease-in-out infinite;
+            }
+
+            #neo-portrait:hover {
+                --tilt: -1.2deg;
+                filter: saturate(112%) contrast(108%);
+            }
+
+            #neo-portrait .rim {
+                position: absolute;
+                inset: 0;
+                pointer-events: none;
+                border-radius: 18px;
+                box-shadow: inset 0 0 0 1px rgba(255, 0, 170, .25), inset 0 0 0 2px rgba(0, 255, 255, .15);
+                mix-blend-mode: screen;
+                opacity: .7;
+            }
+        </style>
+
+        <div id="neo-portrait"
+            onmousemove="(e=>{const r=e.currentTarget.getBoundingClientRect();const x=(e.clientX-(r.left+r.width/2))/r.width;const y=(e.clientY-(r.top+r.height/2))/r.height;e.currentTarget.style.setProperty('--px',(x*10)+'px');e.currentTarget.style.setProperty('--py',(y*8)+'px');})(event)"
+            onmouseleave="this.style.setProperty('--px','0px');this.style.setProperty('--py','0px')">
+            <img class="img"
+                src="https://echoline-assets.us-southeast-1.linodeobjects.com/extras%2FKirk%2FKirkFuson.jpg"
+                alt="Kirk Fuson portrait" />
+            <div class="rain" aria-hidden="true"></div>
+            <div class="gloss" aria-hidden="true"></div>
+            <div class="rim" aria-hidden="true"></div>
+        </div>
+        {# ===== /Neon Alley Portrait ===== #}
+    </header>
+
+    <article class="prose prose-reader prose-invert max-w-none">
+        <p>
+            I’m <strong>Kirk Fuson</strong>, a visual artist and storyteller building
+            <em>Echo Line</em>—a living, serialized experience that blends narrative, art,
+            and atmosphere. My north star is simple: cyberpunk grit with a human heart.
+        </p>
+
+        <p>
+            If you want to see how this project started visually, I’ve archived early
+            cover explorations and concept pieces here:
+            <a href="https://kirkfuson.myportfolio.com/geisha-20-book-cover-art" target="_blank" rel="noopener">
+                Geisha 2.0 — Book Cover Art (early works)
+            </a>.
+        </p>
+
+        <h2>Influences &amp; mood</h2>
+        <p>
+            The writing pulls from a stack of heroes—<strong>William Gibson</strong>,
+            <strong>Neal Stephenson</strong>, <strong>Ray Bradbury</strong>,
+            and <strong>Jack London</strong>—filtered through films like
+            <em>Blade Runner</em>, <em>Three Days of the Condor</em>, and <em>Heat</em>.
+            That mix of atmospheric paranoia, quiet professionalism, and rough-edged hope
+            is the texture I’m chasing in <em>Echo Line</em>.
+        </p>
+
+        <h2>Follow the art</h2>
+        <p>
+            I post process shots, covers, and in-world ephemera on Instagram:
+            <a href="https://www.instagram.com/fumankirk" target="_blank" rel="noopener">@FuManKirk</a>.
+        </p>
+
+        <h2>What to expect here</h2>
+        <ul>
+            <li><strong>Chapters</strong> released in sequence, each with notes, lore, and sketches.</li>
+            <li><strong>Standalone extras</strong> (secret pages, terminals, ephemera) woven into the world.</li>
+            <li><strong>Iterative updates</strong> as the story grows and the city reveals new angles.</li>
+        </ul>
+
+        <p class="text-neutral-400">If you’ve read this far, you’re my kind of reader. Thanks for being here.</p>
+    </article>
+
+    <footer class="pt-2 border-t border-neutral-800 text-sm text-neutral-500 sm:text-left text-center">
+        <p>© {{ (now().year if now else '') }} Kirk Fuson ·
+            <a href="https://www.instagram.com/fumankirk" class="underline decoration-dotted" target="_blank"
+                rel="noopener">@FuManKirk</a>
+        </p>
+    </footer>
+</section>
 {% endblock %}

@@ -25,6 +25,7 @@ from app.db.session import get_db
 from app.models.chapter import Chapter
 from app.routers.chapters import router as chapters_router
 from app.routers.admin import router as admin_router
+from app.routers import about
 
 app = FastAPI(title="Echo Line")
 
@@ -156,3 +157,4 @@ def home(request: Request, db: Session = Depends(get_db)):
 # Routers
 app.include_router(chapters_router, prefix="/chapters", tags=["chapters"])
 app.include_router(admin_router)
+app.include_router(about.router, prefix="/about")

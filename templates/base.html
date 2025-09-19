@@ -1,78 +1,168 @@
 <!doctype html>
 <html lang="en" class="h-full">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="color-scheme" content="dark" />
   <title>{{ title or "Echo Line" }}</title>
 
+  <meta name="description"
+    content="Echo Line — a serialized cyberpunk novel and art project by Kirk Fuson. Chapters, lore, sketches, and director’s notes." />
+
   <!-- Prevent CSS flash (server cache-busted) -->
   <link rel="preload" as="style" href="/static/css/site.css?v={{ STATIC_VERSION }}" />
   <link rel="stylesheet" href="/static/css/site.css?v={{ STATIC_VERSION }}" />
-  <noscript><link rel="stylesheet" href="/static/css/site.css?v={{ STATIC_VERSION }}" /></noscript>
+  <noscript>
+    <link rel="stylesheet" href="/static/css/site.css?v={{ STATIC_VERSION }}" />
+  </noscript>
 
   <style>
-    [x-cloak]{display:none !important}
+    [x-cloak] {
+      display: none !important
+    }
 
     /* ---------- Theme tokens (defaults) ---------- */
-    :root{
-      --bg:#0a0f1a;        /* page background */
-      --bg-soft:#0f172a;   /* containers/cards */
-      --text:#f1f5f9;      /* foreground */
-      --muted:#9ca3af;
+    :root {
+      --bg: #0a0f1a;
+      /* page background */
+      --bg-soft: #0f172a;
+      /* containers/cards */
+      --text: #f1f5f9;
+      /* foreground */
+      --muted: #9ca3af;
 
-      --accent-h:174;      /* cyan accent by default */
-      --accent-s:100%;
-      --accent-l:42%;
+      --accent-h: 174;
+      /* cyan accent by default */
+      --accent-s: 100%;
+      --accent-l: 42%;
     }
 
     /* Smooth theme transitions */
-    html, body, header, main {
+    html,
+    body,
+    header,
+    main {
       transition: background-color .35s ease, background .35s ease, color .35s ease;
     }
 
-    body{ background:var(--bg); color:var(--text); }
+    body {
+      background: var(--bg);
+      color: var(--text);
+    }
 
     /* Neon title glow follows accent */
-    .neon-title{ position:relative; text-shadow:0 1px 0 rgba(255,255,255,.05) }
-    .neon-title::after{
-      content:attr(data-text); position:absolute; inset:0;
-      color:hsl(var(--accent-h) var(--accent-s) calc(var(--accent-l) + 20%));
-      filter:blur(10px) saturate(160%); opacity:.45; pointer-events:none;
+    .neon-title {
+      position: relative;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, .05)
+    }
+
+    .neon-title::after {
+      content: attr(data-text);
+      position: absolute;
+      inset: 0;
+      color: hsl(var(--accent-h) var(--accent-s) calc(var(--accent-l) + 20%));
+      filter: blur(10px) saturate(160%);
+      opacity: .45;
+      pointer-events: none;
     }
 
     /* Accent wash */
-    .theme-base{
+    .theme-base {
       background:
         radial-gradient(1200px 600px at 50% -20%, hsla(var(--accent-h) var(--accent-s) var(--accent-l)/.10), transparent 60%),
         var(--bg-soft);
     }
 
     /* ---------- Curated palettes (Surge cycles these) ---------- */
-    .theme-cyan   { --bg:#07111e; --bg-soft:#0b1525; --accent-h:174; --accent-s:100%; --accent-l:42%; }
-    .theme-magenta{ --bg:#140a18; --bg-soft:#1a0f24; --accent-h:316; --accent-s:100%; --accent-l:62%; }
-    .theme-amber  { --bg:#151005; --bg-soft:#1e1507; --accent-h:42;  --accent-s:100%; --accent-l:56%; }
-    .theme-lime   { --bg:#0d1407; --bg-soft:#111a0a; --accent-h:95;  --accent-s:100%; --accent-l:50%; }
-    .theme-violet { --bg:#0f0b1a; --bg-soft:#160f25; --accent-h:262; --accent-s:92%;  --accent-l:58%; }
-    .theme-azure  { --bg:#07121a; --bg-soft:#0b1823; --accent-h:204; --accent-s:100%; --accent-l:56%; }
+    .theme-cyan {
+      --bg: #07111e;
+      --bg-soft: #0b1525;
+      --accent-h: 174;
+      --accent-s: 100%;
+      --accent-l: 42%;
+    }
+
+    .theme-magenta {
+      --bg: #140a18;
+      --bg-soft: #1a0f24;
+      --accent-h: 316;
+      --accent-s: 100%;
+      --accent-l: 62%;
+    }
+
+    .theme-amber {
+      --bg: #151005;
+      --bg-soft: #1e1507;
+      --accent-h: 42;
+      --accent-s: 100%;
+      --accent-l: 56%;
+    }
+
+    .theme-lime {
+      --bg: #0d1407;
+      --bg-soft: #111a0a;
+      --accent-h: 95;
+      --accent-s: 100%;
+      --accent-l: 50%;
+    }
+
+    .theme-violet {
+      --bg: #0f0b1a;
+      --bg-soft: #160f25;
+      --accent-h: 262;
+      --accent-s: 92%;
+      --accent-l: 58%;
+    }
+
+    .theme-azure {
+      --bg: #07121a;
+      --bg-soft: #0b1823;
+      --accent-h: 204;
+      --accent-s: 100%;
+      --accent-l: 56%;
+    }
 
     /* Scanlines overlay (toggle) */
-    .scanlines{
-      pointer-events:none; position:fixed; inset:0; z-index:30;
-      background:repeating-linear-gradient(to bottom, rgba(255,255,255,.10) 0px, rgba(255,255,255,.10) 1px, transparent 1px, transparent 3px);
-      mix-blend-mode:overlay; opacity:.35;
+    .scanlines {
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, .10) 0px, rgba(255, 255, 255, .10) 1px, transparent 1px, transparent 3px);
+      mix-blend-mode: overlay;
+      opacity: .35;
     }
-    body:not(.has-scanlines) .scanlines{ display:none }
+
+    body:not(.has-scanlines) .scanlines {
+      display: none
+    }
 
     /* Surge pulse ring (kept) */
-    @keyframes surgePulse{
-      0%{ box-shadow:0 0 0 0 hsla(var(--accent-h) var(--accent-s) var(--accent-l)/.55) }
-      100%{ box-shadow:0 0 0 24px rgba(34,211,238,0) }
+    @keyframes surgePulse {
+      0% {
+        box-shadow: 0 0 0 0 hsla(var(--accent-h) var(--accent-s) var(--accent-l)/.55)
+      }
+
+      100% {
+        box-shadow: 0 0 0 24px rgba(34, 211, 238, 0)
+      }
     }
-    .surge-ring{ animation:surgePulse .6s ease-out }
+
+    .surge-ring {
+      animation: surgePulse .6s ease-out
+    }
 
     /* Desktop safety shim */
-    @media (min-width:768px){ .md\:flex{display:flex !important} .md\:hidden{display:none !important} }
+    @media (min-width:768px) {
+      .md\:flex {
+        display: flex !important
+      }
+
+      .md\:hidden {
+        display: none !important
+      }
+    }
   </style>
 
   <!-- Alpine core -->
@@ -83,22 +173,22 @@
     window.chapterExtras = function (seed) {
       return {
         openKey: null,
-        hasSketches:false, hasNotes:false, hasLore:false, hasAmbient:false, hasReel:false,
+        hasSketches: false, hasNotes: false, hasLore: false, hasAmbient: false, hasReel: false,
         assetsBase: seed?.assetsBase || "",
-        state: { created_at:"", ambient_url:"", reel_url:"", sketches:[], notes:{}, lore:{}, _ambientOn:false },
+        state: { created_at: "", ambient_url: "", reel_url: "", sketches: [], notes: {}, lore: {}, _ambientOn: false },
 
-        asset(key){
-          if(!key) return "";
-          if(/^https?:\/\//i.test(key)) return key;
-          const base=(this.assetsBase||"").replace(/\/+$/,"");
-          const k=String(key).replace(/^\/+/,"");
+        asset(key) {
+          if (!key) return "";
+          if (/^https?:\/\//i.test(key)) return key;
+          const base = (this.assetsBase || "").replace(/\/+$/, "");
+          const k = String(key).replace(/^\/+/, "");
           return base ? `${base}/${k}` : `/static/${k}`;
         },
 
-        init(){
+        init() {
           const chapter = seed?.chapter || {};
           let meta = seed?.meta ?? {};
-          if (typeof meta === "string"){ try{ meta = JSON.parse(meta) } catch { meta = {} } }
+          if (typeof meta === "string") { try { meta = JSON.parse(meta) } catch { meta = {} } }
           if (!meta || typeof meta !== "object") meta = {};
 
           this.state.created_at = chapter.created_at || "";
@@ -107,12 +197,12 @@
 
           const rawSketches = Array.isArray(meta.sketches) ? meta.sketches : [];
           this.state.sketches = rawSketches
-            .map(s => typeof s === "string" ? { src: this.asset(s) } : { ...(s||{}), src: this.asset((s && s.src) || "") })
+            .map(s => typeof s === "string" ? { src: this.asset(s) } : { ...(s || {}), src: this.asset((s && s.src) || "") })
             .filter(x => !!x.src);
 
           this.state.notes = (meta.notes && typeof meta.notes === "object") ? meta.notes : {};
           const beatsLen = Array.isArray(this.state.notes?.beats) ? this.state.notes.beats.length : 0;
-          const eggsLen  = Array.isArray(this.state.notes?.eggs)  ? this.state.notes.eggs.length  : 0;
+          const eggsLen = Array.isArray(this.state.notes?.eggs) ? this.state.notes.eggs.length : 0;
 
           const lore = (meta.lore && typeof meta.lore === "object") ? { ...meta.lore } : {};
           if (lore.portrait) lore.portrait = this.asset(lore.portrait);
@@ -131,19 +221,19 @@
           window.$chapter = this; // console helper
         },
 
-        open(what){ this.openKey = what },
-        close(){ this.openKey = null },
+        open(what) { this.openKey = what },
+        close() { this.openKey = null },
       };
     };
 
     /* ---------- Base UI (Surge cycles full theme) ---------- */
     window.baseUI = function () {
       return {
-        theme:'theme-base theme-cyan', // base + one palette
-        neonOn:false, scanlinesOn:false,
-        lightboxSrc:null, searchOpen:false, mobileOpen:false,
+        theme: 'theme-base theme-cyan', // base + one palette
+        neonOn: false, scanlinesOn: false,
+        lightboxSrc: null, searchOpen: false, mobileOpen: false,
 
-        init(){
+        init() {
           this.neonOn = localStorage.getItem('theme-neon') === '1';
           this.scanlinesOn = localStorage.getItem('scanlines') === '1';
           document.body.classList.toggle('has-scanlines', this.scanlinesOn);
@@ -163,33 +253,33 @@
           window.addEventListener('open-lightbox', e => { this.lightboxSrc = e.detail || null; });
         },
 
-        toggleNeon(){
+        toggleNeon() {
           this.neonOn = !this.neonOn;
           localStorage.setItem('theme-neon', this.neonOn ? '1' : '0');
         },
 
-        toggleScanlines(){
+        toggleScanlines() {
           this.scanlinesOn = !this.scanlinesOn;
           document.body.classList.toggle('has-scanlines', this.scanlinesOn);
           localStorage.setItem('scanlines', this.scanlinesOn ? '1' : '0');
         },
 
-        cycleTheme(){
+        cycleTheme() {
           const el = document.querySelector('main') || document.body;
           el.classList.add('surge-ring'); setTimeout(() => el.classList.remove('surge-ring'), 650);
 
-          const choices = ['theme-cyan','theme-magenta','theme-amber','theme-lime','theme-violet','theme-azure'];
+          const choices = ['theme-cyan', 'theme-magenta', 'theme-amber', 'theme-lime', 'theme-violet', 'theme-azure'];
           const current = this.theme.split(' ').find(c => c.startsWith('theme-') && c !== 'theme-base') || 'theme-cyan';
           const pool = choices.filter(c => c !== current);
-          const next = pool[Math.floor(Math.random()*pool.length)] || 'theme-magenta';
+          const next = pool[Math.floor(Math.random() * pool.length)] || 'theme-magenta';
           this.theme = `theme-base ${next}`;
           localStorage.setItem('theme-palette', next);
         },
 
         // alias so older templates using @click="surge" don’t break
-        surge(){ this.cycleTheme() },
+        surge() { this.cycleTheme() },
 
-        openSearch(){ this.searchOpen = true; this.$nextTick(() => this.$refs.searchInput?.focus()); },
+        openSearch() { this.searchOpen = true; this.$nextTick(() => this.$refs.searchInput?.focus()); },
       };
     };
   </script>
@@ -197,7 +287,8 @@
 
 <body x-data="baseUI()" x-init="init()" :class="theme" class="min-h-screen antialiased">
   <!-- Sticky Top Nav -->
-  <header class="sticky top-0 z-40 border-b border-neutral-900/70 bg-neutral-950/80 backdrop-blur supports-[backdrop-filter]:bg-neutral-950/60">
+  <header
+    class="sticky top-0 z-40 border-b border-neutral-900/70 bg-neutral-950/80 backdrop-blur supports-[backdrop-filter]:bg-neutral-950/60">
     <nav class="mx-auto max-w-6xl px-4 sm:px-6 h-14 flex items-center justify-between">
       <a href="/" class="shrink-0 font-semibold tracking-tight hover:underline decoration-dotted">Echo Line</a>
 
@@ -235,42 +326,47 @@
       </button>
     </nav>
 
-    <!-- Mobile drawer -->
-    <div x-show="mobileOpen" x-transition.opacity x-cloak @keydown.escape.window="mobileOpen=false"
-      class="md:hidden fixed inset-0 z-50 bg-black/70">
-      <aside @click.outside="mobileOpen=false"
-        class="absolute left-0 top-0 h-full w-[80vw] max-w-sm bg-neutral-950 border-r border-neutral-800 p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <span class="font-semibold">Echo Line</span>
-          <button @click="mobileOpen=false" class="px-2 py-1 rounded hover:bg-neutral-800">Close</button>
-        </div>
+    <!-- Mobile drawer (teleported to body so it sits above ALL content) -->
+    <template x-teleport="body">
+      <div x-show="mobileOpen" x-transition.opacity x-cloak @keydown.escape.window="mobileOpen=false"
+        class="fixed inset-0 bg-black/85" style="z-index:2147483000"> <!-- ultra-high z-index -->
 
-        <nav class="mt-2 space-y-1">
-          <a href="/" class="block rounded px-3 py-2 hover:bg-neutral-800">Home</a>
-          <a href="/chapters" class="block rounded px-3 py-2 hover:bg-neutral-800">Chapters</a>
-          <a href="/about" class="block rounded px-3 py-2 hover:bg-neutral-800">About</a>
-        </nav>
+        <aside @click.outside="mobileOpen=false" class="absolute left-0 top-0 h-full w-[80vw] max-w-sm
+                  bg-neutral-950 text-neutral-200 border-r border-neutral-800 p-4 space-y-3
+                  shadow-2xl" style="z-index:2147483001">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold">Echo Line</span>
+            <button @click="mobileOpen=false" class="px-2 py-1 rounded hover:bg-neutral-800">Close</button>
+          </div>
 
-        <div class="mt-4 grid grid-cols-2 gap-2">
-          <button @click="toggleNeon"
-            class="rounded border border-neutral-800 bg-neutral-900/60 px-3 py-2 hover:bg-neutral-800 text-sm col-span-2">
-            <span x-text="neonOn ? 'Neon: ON' : 'Neon: OFF'"></span>
-          </button>
-          <button @click="toggleScanlines"
-            class="rounded border border-neutral-800 bg-neutral-900/60 px-3 py-2 hover:bg-neutral-800 text-sm col-span-2">
-            <span x-text="scanlinesOn ? 'Scanlines: ON' : 'Scanlines: OFF'"></span>
-          </button>
-          <button @click="cycleTheme"
-            class="rounded border border-neutral-800 bg-neutral-900/60 px-3 py-2 hover:bg-neutral-800 text-sm col-span-2">
-            Surge ⚡
-          </button>
-          <button @click="openSearch"
-            class="rounded border border-neutral-800 bg-neutral-900/60 px-3 py-2 hover:bg-neutral-800 text-sm col-span-2">
-            Search <kbd class="ml-1 text-neutral-500">/</kbd>
-          </button>
-        </div>
-      </aside>
-    </div>
+          <nav class="mt-2 space-y-1">
+            <a href="/" class="block rounded px-3 py-2 hover:bg-neutral-800">Home</a>
+            <a href="/chapters" class="block rounded px-3 py-2 hover:bg-neutral-800">Chapters</a>
+            <a href="/about" class="block rounded px-3 py-2 hover:bg-neutral-800">About</a>
+          </nav>
+
+          <div class="mt-4 grid gap-2">
+            <button @click="toggleNeon"
+              class="rounded border border-neutral-800 bg-neutral-900/90 px-3 py-2 hover:bg-neutral-800 text-sm">
+              <span x-text="neonOn ? 'Neon: ON' : 'Neon: OFF'"></span>
+            </button>
+            <button @click="toggleScanlines"
+              class="rounded border border-neutral-800 bg-neutral-900/90 px-3 py-2 hover:bg-neutral-800 text-sm">
+              <span x-text="scanlinesOn ? 'Scanlines: ON' : 'Scanlines: OFF'"></span>
+            </button>
+            <button @click="cycleTheme"
+              class="rounded border border-neutral-800 bg-neutral-900/90 px-3 py-2 hover:bg-neutral-800 text-sm">
+              Surge ⚡
+            </button>
+            <button @click="openSearch"
+              class="rounded border border-neutral-800 bg-neutral-900/90 px-3 py-2 hover:bg-neutral-800 text-sm">
+              Search <kbd class="ml-1 text-neutral-500">/</kbd>
+            </button>
+          </div>
+        </aside>
+      </div>
+    </template>
+
   </header>
 
   <!-- Page -->
@@ -278,13 +374,24 @@
     {% block content %}{% endblock %}
   </main>
 
+  <!-- Footer -->
+  <footer class="mt-12 border-t border-neutral-900/70 pt-6 text-center text-xs text-neutral-500">
+    <p>
+      Echo Line is a serialized cyberpunk novel and art project by
+      <a href="/about" class="underline decoration-dotted hover:text-neutral-300">Kirk Fuson</a>.
+      Follow the journey on
+      <a href="https://instagram.com/fumankirk" target="_blank"
+        class="underline decoration-dotted hover:text-neutral-300">@fumankirk</a>.
+    </p>
+  </footer>
+
   <!-- CRT overlay -->
   <div class="scanlines"></div>
 
   <!-- Lightbox -->
   <template x-teleport="body">
-    <div x-show="lightboxSrc" x-transition.opacity
-      class="fixed inset-0 bg-black/80 grid place-items-center p-4 z-50" @click.self="lightboxSrc=null">
+    <div x-show="lightboxSrc" x-transition.opacity class="fixed inset-0 bg-black/80 grid place-items-center p-4 z-50"
+      @click.self="lightboxSrc=null">
       <img :src="lightboxSrc" alt="" class="max-h-full max-w-full rounded-lg shadow-xl" />
       <button @click="lightboxSrc=null"
         class="absolute top-4 right-4 px-3 py-1 rounded bg-neutral-900 border border-neutral-700 hover:bg-neutral-800">Close</button>
@@ -293,8 +400,7 @@
 
   <!-- Search Modal -->
   <template x-teleport="body">
-    <div x-show="searchOpen" x-transition.opacity
-      class="fixed inset-0 bg-black/70 z-50 grid place-items-center p-4"
+    <div x-show="searchOpen" x-transition.opacity class="fixed inset-0 bg-black/70 z-50 grid place-items-center p-4"
       @keydown.escape.window="searchOpen=false" @click.self="searchOpen=false">
       <div class="w-full max-w-xl rounded-xl border border-neutral-800 bg-neutral-950 p-4">
         <div class="flex items-center gap-2">
@@ -308,4 +414,5 @@
     </div>
   </template>
 </body>
+
 </html>
