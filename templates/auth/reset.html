@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="mx-auto max-w-sm w-full space-y-6">
+    <header>
+        <h1 class="text-2xl font-bold tracking-tight">Set a new password</h1>
+        {% if error %}
+        <p class="mt-2 text-sm text-red-400">{{ error }}</p>
+        {% endif %}
+        {% if message %}
+        <p class="mt-2 text-sm text-emerald-400">{{ message }}</p>
+        {% endif %}
+    </header>
+
+    {% if not message %}
+    <form method="post" class="space-y-4">
+        <input type="hidden" name="token" value="{{ token }}">
+
+        <label class="block space-y-1">
+            <span class="text-sm text-neutral-300">New Password</span>
+            <input name="password" type="password" required class="w-full bg-neutral-950 border border-neutral-700 rounded px-3 py-2
+                    focus:outline-none focus:ring-2 focus:ring-cyan-600" placeholder="At least 8 characters" />
+        </label>
+
+        <label class="block space-y-1">
+            <span class="text-sm text-neutral-300">Confirm Password</span>
+            <input name="password_confirm" type="password" required class="w-full bg-neutral-950 border border-neutral-700 rounded px-3 py-2
+                    focus:outline-none focus:ring-2 focus:ring-cyan-600" />
+        </label>
+
+        <button type="submit" class="w-full px-3 py-2 rounded border border-neutral-700 bg-neutral-900
+                   hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-cyan-600">
+            Reset Password
+        </button>
+    </form>
+    {% else %}
+    <div class="text-sm text-neutral-300 space-y-2">
+        <p>Your password has been updated successfully. You can now <a href="/auth/login"
+                class="underline hover:text-neutral-200">log in</a> with your new password.</p>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

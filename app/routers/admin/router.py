@@ -26,7 +26,15 @@ from app.models.chapter import Chapter
 import boto3
 from botocore.config import Config as BotoConfig
 
-router = APIRouter(prefix="/admin", tags=["admin"])
+# 👇 NEW: admin-only dependency
+from app.utils.authz import require_admin
+
+# Apply the admin gate to ALL /admin routes
+router = APIRouter(
+    prefix="/admin",
+    tags=["admin"],
+    dependencies=[Depends(require_admin)],
+)
 
 # ---------------- Helpers ----------------
 _slug_strip_re = re.compile(r"[^\w\s-]")

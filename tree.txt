@@ -2,8 +2,9 @@
 ├── app
 │   ├── db
 │   ├── models
-│   └── routers
-│       └── admin
+│   ├── routers
+│   │   └── admin
+│   └── utils
 ├── aws
 │   └── dist
 │       ├── awscli
@@ -19,10 +20,12 @@
 │   ├── css
 │   └── js
 └── templates
+    ├── account
     ├── admin
+    ├── auth
     └── pages
 
-23 directories
+26 directories
 
 # Root files
 alembic.ini
@@ -44,24 +47,36 @@ tree.txt
 # app/models
 chapter.py
 __init__.py
+password_reset.py
 __pycache__
+read_event.py
+user.py
 
 # app/routers
+about.py
+account.py
 admin
+admin_uploads.py
+auth.py
 chapters.py
+extras.py
 pages.py
 __pycache__
+telemetry.py
 
 # templates
+account
 admin
+auth
 base.html
+extras_missing.html
 index.html
 pages
 
 # templates/admin
-chapter_edit.html
+chapter_edithtml.old
 chapter_form.html
-chapter_new.html
+chapter_newhtml.old
 dashboard.html
 login.html
 
