@@ -7,8 +7,10 @@
   <meta name="color-scheme" content="dark" />
   <title>{{ title or "Echo Line" }}</title>
 
-  <meta name="description"
-    content="Echo Line — a serialized cyberpunk novel and art project by Kirk Fuson. Chapters, lore, sketches, and director’s notes." />
+  {% set _meta_desc = meta_description
+  or "Echo Line — a serialized cyberpunk novel and art project by Kirk Fuson. Chapters, lore, sketches, and director’s
+  notes." %}
+  <meta name="description" content="{{ _meta_desc }}" />
 
   <!-- Prevent CSS flash (server cache-busted) -->
   <link rel="preload" as="style" href="/static/css/site.css?v={{ STATIC_VERSION }}" />
@@ -25,20 +27,14 @@
     /* ---------- Theme tokens (defaults) ---------- */
     :root {
       --bg: #0a0f1a;
-      /* page background */
       --bg-soft: #0f172a;
-      /* containers/cards */
       --text: #f1f5f9;
-      /* foreground */
       --muted: #9ca3af;
-
       --accent-h: 174;
-      /* cyan accent by default */
       --accent-s: 100%;
       --accent-l: 42%;
     }
 
-    /* Smooth theme transitions */
     html,
     body,
     header,
@@ -51,7 +47,7 @@
       color: var(--text);
     }
 
-    /* Neon title glow follows accent */
+    /* Base (subtle) title */
     .neon-title {
       position: relative;
       text-shadow: 0 1px 0 rgba(255, 255, 255, .05)
@@ -63,24 +59,68 @@
       inset: 0;
       color: hsl(var(--accent-h) var(--accent-s) calc(var(--accent-l) + 20%));
       filter: blur(10px) saturate(160%);
-      opacity: .45;
+      opacity: .18;
       pointer-events: none;
+      transition: opacity .25s ease, filter .25s ease;
     }
 
-    /* Accent wash */
+    /* Strong neon only when neon is ON */
+    .neon-on .neon-title {
+      color: #e6fdff;
+      text-shadow:
+        0 0 1px #c8ffff,
+        0 0 2px #c8ffff,
+        0 0 6px #22d3ee,
+        0 0 12px #22d3ee,
+        0 0 24px rgba(34, 211, 238, .65),
+        0 0 48px rgba(236, 72, 153, .35);
+      animation: neonPulse 2.2s ease-in-out infinite;
+      will-change: filter, text-shadow, transform;
+    }
+
+    .neon-on .neon-title::after {
+      opacity: .45
+    }
+
+    @keyframes neonPulse {
+
+      0%,
+      100% {
+        filter: drop-shadow(0 0 0px rgba(34, 211, 238, .25));
+        text-shadow:
+          0 0 1px #c8ffff,
+          0 0 2px #c8ffff,
+          0 0 6px #22d3ee,
+          0 0 12px #22d3ee,
+          0 0 22px rgba(34, 211, 238, .55),
+          0 0 38px rgba(236, 72, 153, .25);
+      }
+
+      50% {
+        filter: drop-shadow(0 0 8px rgba(34, 211, 238, .45));
+        text-shadow:
+          0 0 1px #e6fdff,
+          0 0 3px #e6fdff,
+          0 0 8px #22d3ee,
+          0 0 18px #22d3ee,
+          0 0 36px rgba(34, 211, 238, .85),
+          0 0 64px rgba(236, 72, 153, .45);
+      }
+    }
+
     .theme-base {
       background:
         radial-gradient(1200px 600px at 50% -20%, hsla(var(--accent-h) var(--accent-s) var(--accent-l)/.10), transparent 60%),
         var(--bg-soft);
     }
 
-    /* ---------- Curated palettes (Surge cycles these) ---------- */
+    /* Palettes */
     .theme-cyan {
       --bg: #07111e;
       --bg-soft: #0b1525;
       --accent-h: 174;
       --accent-s: 100%;
-      --accent-l: 42%;
+      --accent-l: 42%
     }
 
     .theme-magenta {
@@ -88,7 +128,7 @@
       --bg-soft: #1a0f24;
       --accent-h: 316;
       --accent-s: 100%;
-      --accent-l: 62%;
+      --accent-l: 62%
     }
 
     .theme-amber {
@@ -96,7 +136,7 @@
       --bg-soft: #1e1507;
       --accent-h: 42;
       --accent-s: 100%;
-      --accent-l: 56%;
+      --accent-l: 56%
     }
 
     .theme-lime {
@@ -104,7 +144,7 @@
       --bg-soft: #111a0a;
       --accent-h: 95;
       --accent-s: 100%;
-      --accent-l: 50%;
+      --accent-l: 50%
     }
 
     .theme-violet {
@@ -112,7 +152,7 @@
       --bg-soft: #160f25;
       --accent-h: 262;
       --accent-s: 92%;
-      --accent-l: 58%;
+      --accent-l: 58%
     }
 
     .theme-azure {
@@ -120,25 +160,38 @@
       --bg-soft: #0b1823;
       --accent-h: 204;
       --accent-s: 100%;
-      --accent-l: 56%;
+      --accent-l: 56%
     }
 
-    /* Scanlines overlay (toggle) */
+    /* Global scanlines overlay (single source of truth) */
     .scanlines {
       pointer-events: none;
       position: fixed;
       inset: 0;
       z-index: 30;
-      background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, .10) 0px, rgba(255, 255, 255, .10) 1px, transparent 1px, transparent 3px);
+      background:
+        /* horizontal lines */
+        repeating-linear-gradient(to bottom, rgba(255, 255, 255, .80) 0px, rgba(255, 255, 255, .80) 1px, transparent 1px, transparent 3px);
       mix-blend-mode: overlay;
-      opacity: .35;
+      opacity: .85;
+      /* subtle drift so it feels alive */
+      animation: scanDrift 7s linear infinite;
     }
 
     body:not(.has-scanlines) .scanlines {
       display: none
     }
 
-    /* Surge pulse ring (kept) */
+    @keyframes scanDrift {
+      from {
+        background-position-y: 0
+      }
+
+      to {
+        background-position-y: 8px
+      }
+    }
+
     @keyframes surgePulse {
       0% {
         box-shadow: 0 0 0 0 hsla(var(--accent-h) var(--accent-s) var(--accent-l)/.55)
@@ -153,7 +206,6 @@
       animation: surgePulse .6s ease-out
     }
 
-    /* Desktop safety shim */
     @media (min-width:768px) {
       .md\:flex {
         display: flex !important
@@ -165,96 +217,104 @@
     }
   </style>
 
-  <!-- Alpine core -->
   <script defer src="/static/js/alpine.global.min.js"></script>
-
   <script>
-    /* ---------- chapterExtras (unchanged APIs so modals keep working) ---------- */
+    /* ===========================
+       chapterExtras (safe, minimal)
+       =========================== */
     window.chapterExtras = function (seed) {
+      const s = seed || {};
+      let meta = s.meta || {};
+      if (typeof meta === "string") { try { meta = JSON.parse(meta) } catch { meta = {}; } }
+
+      const assetsBase = (s.assetsBase || "").replace(/\/+$/, "");
+      const asset = (k) => {
+        if (!k) return "";
+        if (/^https?:\/\//i.test(k)) return k;
+        const key = String(k).replace(/^\/+/, "");
+        return assetsBase ? `${assetsBase}/${key}` : `/static/${key}`;
+      };
+
+      const lore = meta.lore && typeof meta.lore === "object" ? { ...meta.lore } : {};
+      if (lore.portrait) lore.portrait = asset(lore.portrait);
+
+      const rawSketches = Array.isArray(meta.sketches) ? meta.sketches : [];
+      const sketches = rawSketches
+        .map((x) => typeof x === "string" ? { src: asset(x) } : { ...(x || {}), src: asset((x && x.src) || "") })
+        .filter((x) => !!x.src);
+
+      const notes = (meta.notes && typeof meta.notes === "object") ? meta.notes : {};
+
+      const hasNotes =
+        !!notes.intro ||
+        (Array.isArray(notes.beats) && notes.beats.length) ||
+        (Array.isArray(notes.eggs) && notes.eggs.length) ||
+        !!notes.music;
+
+      const hasSketches = sketches.length > 0;
+      const hasLore = !!(lore.name || lore.bio) ||
+        (Array.isArray(lore.loadout) && lore.loadout.length) ||
+        (Array.isArray(lore.signals) && lore.signals.length);
+
       return {
         openKey: null,
-        hasSketches: false, hasNotes: false, hasLore: false, hasAmbient: false, hasReel: false,
-        assetsBase: seed?.assetsBase || "",
-        state: { created_at: "", ambient_url: "", reel_url: "", sketches: [], notes: {}, lore: {}, _ambientOn: false },
-
-        asset(key) {
-          if (!key) return "";
-          if (/^https?:\/\//i.test(key)) return key;
-          const base = (this.assetsBase || "").replace(/\/+$/, "");
-          const k = String(key).replace(/^\/+/, "");
-          return base ? `${base}/${k}` : `/static/${k}`;
+        assetsBase,
+        state: {
+          created_at: (s.chapter && s.chapter.created_at) || "",
+          ambient_url: (s.chapter && s.chapter.ambient_url) || "",
+          reel_url: (s.chapter && s.chapter.reel_url) || "",
+          sketches,
+          notes,
+          lore
         },
-
-        init() {
-          const chapter = seed?.chapter || {};
-          let meta = seed?.meta ?? {};
-          if (typeof meta === "string") { try { meta = JSON.parse(meta) } catch { meta = {} } }
-          if (!meta || typeof meta !== "object") meta = {};
-
-          this.state.created_at = chapter.created_at || "";
-          this.state.ambient_url = chapter.ambient_url || "";
-          this.state.reel_url = chapter.reel_url || "";
-
-          const rawSketches = Array.isArray(meta.sketches) ? meta.sketches : [];
-          this.state.sketches = rawSketches
-            .map(s => typeof s === "string" ? { src: this.asset(s) } : { ...(s || {}), src: this.asset((s && s.src) || "") })
-            .filter(x => !!x.src);
-
-          this.state.notes = (meta.notes && typeof meta.notes === "object") ? meta.notes : {};
-          const beatsLen = Array.isArray(this.state.notes?.beats) ? this.state.notes.beats.length : 0;
-          const eggsLen = Array.isArray(this.state.notes?.eggs) ? this.state.notes.eggs.length : 0;
-
-          const lore = (meta.lore && typeof meta.lore === "object") ? { ...meta.lore } : {};
-          if (lore.portrait) lore.portrait = this.asset(lore.portrait);
-          this.state.lore = lore;
-
-          this.hasSketches = this.state.sketches.length > 0;
-          this.hasNotes = !!(this.state.notes?.intro || beatsLen || eggsLen);
-          this.hasLore =
-            !!(this.state.lore?.name || this.state.lore?.bio) ||
-            (Array.isArray(this.state.lore?.loadout) && this.state.lore.loadout.length) ||
-            (Array.isArray(this.state.lore?.signals) && this.state.lore.signals.length);
-
-          this.hasAmbient = !!this.state.ambient_url;
-          this.hasReel = !!this.state.reel_url;
-
-          window.$chapter = this; // console helper
-        },
-
-        open(what) { this.openKey = what },
-        close() { this.openKey = null },
+        hasSketches, hasNotes, hasLore,
+        hasAmbient: !!((s.chapter && s.chapter.ambient_url) || ""),
+        hasReel: !!((s.chapter && s.chapter.reel_url) || ""),
+        asset,
+        init() { /* no-op */ },
+        open(what) { this.openKey = what; },
+        close() { this.openKey = null; }
       };
     };
 
-    /* ---------- Base UI (Surge cycles full theme) ---------- */
+    /* ===========================
+       baseUI (mobile menu + theme + FX)
+       =========================== */
     window.baseUI = function () {
       return {
-        theme: 'theme-base theme-cyan', // base + one palette
-        neonOn: false, scanlinesOn: false,
-        lightboxSrc: null, searchOpen: false, mobileOpen: false,
+        /* state */
+        theme: 'theme-base ' + (localStorage.getItem('theme-palette') || 'theme-cyan'),
+        neonOn: localStorage.getItem('theme-neon') === '1',
+        scanlinesOn: localStorage.getItem('scanlines') === '1',
+        lightboxSrc: null,
+        searchOpen: false,
+        mobileOpen: false,
 
+        /* lifecycle */
         init() {
-          this.neonOn = localStorage.getItem('theme-neon') === '1';
-          this.scanlinesOn = localStorage.getItem('scanlines') === '1';
+          // apply initial FX classes
+          document.body.classList.toggle('neon-on', this.neonOn);
           document.body.classList.toggle('has-scanlines', this.scanlinesOn);
 
-          const saved = localStorage.getItem('theme-palette');
-          if (saved) this.theme = `theme-base ${saved}`;
-
+          // keyboard helpers
           window.addEventListener('keydown', (e) => {
-            if (e.key === 't') this.toggleNeon();
             if (e.key === '/') { e.preventDefault(); this.openSearch(); }
+            if (e.key === 't') this.toggleNeon();
             if (e.key === 'g') this.cycleTheme();
             if (e.key === 's') this.toggleScanlines();
           });
+
+          // custom events for compatibility
           window.addEventListener('toggle-neon', () => this.toggleNeon());
           window.addEventListener('neon-surge', () => this.cycleTheme());
           window.addEventListener('toggle-scanlines', () => this.toggleScanlines());
           window.addEventListener('open-lightbox', e => { this.lightboxSrc = e.detail || null; });
         },
 
+        /* actions */
         toggleNeon() {
           this.neonOn = !this.neonOn;
+          document.body.classList.toggle('neon-on', this.neonOn);
           localStorage.setItem('theme-neon', this.neonOn ? '1' : '0');
         },
 
@@ -266,7 +326,8 @@
 
         cycleTheme() {
           const el = document.querySelector('main') || document.body;
-          el.classList.add('surge-ring'); setTimeout(() => el.classList.remove('surge-ring'), 650);
+          el.classList.add('surge-ring');
+          setTimeout(() => el.classList.remove('surge-ring'), 650);
 
           const choices = ['theme-cyan', 'theme-magenta', 'theme-amber', 'theme-lime', 'theme-violet', 'theme-azure'];
           const current = this.theme.split(' ').find(c => c.startsWith('theme-') && c !== 'theme-base') || 'theme-cyan';
@@ -276,47 +337,51 @@
           localStorage.setItem('theme-palette', next);
         },
 
-        // alias so older templates using @click="surge" don’t break
-        surge() { this.cycleTheme() },
-
-        openSearch() { this.searchOpen = true; this.$nextTick(() => this.$refs.searchInput?.focus()); },
+        openSearch() { this.searchOpen = true; this.$nextTick(() => this.$refs.searchInput?.focus()); }
       };
     };
   </script>
 </head>
 
 <body x-data="baseUI()" x-init="init()" :class="theme" class="min-h-screen antialiased">
-  <!-- Sticky Top Nav -->
-  <header
-    class="sticky top-0 z-40 border-b border-neutral-900/70 bg-neutral-950/80 backdrop-blur supports-[backdrop-filter]:bg-neutral-950/60">
+  {% set user = request.state.user %}
+  <!-- Nav -->
+  <header class="sticky top-0 z-40 border-b border-neutral-900/70 bg-neutral-950/80 backdrop-blur">
     <nav class="mx-auto max-w-6xl px-4 sm:px-6 h-14 flex items-center justify-between">
       <a href="/" class="shrink-0 font-semibold tracking-tight hover:underline decoration-dotted">Echo Line</a>
-
-      <!-- Desktop links -->
       <div class="hidden md:flex items-center gap-2">
-        <a href="/" class="px-3 py-1 rounded hover:bg-neutral-800 transition text-sm">Home</a>
-        <a href="/chapters" class="px-3 py-1 rounded hover:bg-neutral-800 transition text-sm">Chapters</a>
-        <a href="/about" class="px-3 py-1 rounded hover:bg-neutral-800 transition text-sm">About</a>
-
+        <a href="/" class="px-3 py-1 rounded hover:bg-neutral-800 text-sm">Home</a>
+        <a href="/chapters" class="px-3 py-1 rounded hover:bg-neutral-800 text-sm">Chapters</a>
+        <a href="/about" class="px-3 py-1 rounded hover:bg-neutral-800 text-sm">About</a>
+        {% if user %}
+        <a href="/account" class="px-3 py-1 rounded hover:bg-neutral-800 text-sm">{{ user.email or "Account" }}</a>
+        <form action="/auth/logout" method="post" class="inline">
+          <button
+            class="px-3 py-1 rounded border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 text-sm">Logout</button>
+        </form>
+        {% else %}
+        <a href="/auth/login"
+          class="px-3 py-1 rounded border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 text-sm">Login</a>
+        <a href="/auth/register"
+          class="px-3 py-1 rounded border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 text-sm">Create
+          Account</a>
+        {% endif %}
         <button @click="toggleNeon"
-          class="px-3 py-1 rounded border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 transition text-sm">
+          class="px-3 py-1 rounded border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 text-sm">
           <span x-text="neonOn ? 'Neon: ON' : 'Neon: OFF'"></span>
         </button>
         <button @click="toggleScanlines"
-          class="px-3 py-1 rounded border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 transition text-sm">
+          class="px-3 py-1 rounded border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 text-sm">
           <span x-text="scanlinesOn ? 'Scanlines: ON' : 'Scanlines: OFF'"></span>
         </button>
         <button @click="cycleTheme"
-          class="px-3 py-1 rounded border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 transition text-sm">
-          Surge ⚡
-        </button>
+          class="px-3 py-1 rounded border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 text-sm">Surge
+          ⚡</button>
         <button @click="openSearch"
-          class="px-3 py-1 rounded border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 transition text-sm">
+          class="px-3 py-1 rounded border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 text-sm">
           Search <kbd class="ml-1 text-neutral-500">/</kbd>
         </button>
       </div>
-
-      <!-- Mobile menu button -->
       <button @click="mobileOpen=true"
         class="md:hidden inline-flex items-center gap-2 px-3 py-1 rounded border border-neutral-800 bg-neutral-900/50 hover:bg-neutral-800 text-sm">
         Menu
@@ -326,66 +391,52 @@
       </button>
     </nav>
 
-    <!-- Mobile drawer (teleported to body so it sits above ALL content) -->
+    <!-- Mobile drawer -->
     <template x-teleport="body">
       <div x-show="mobileOpen" x-transition.opacity x-cloak @keydown.escape.window="mobileOpen=false"
-        class="fixed inset-0 bg-black/85" style="z-index:2147483000"> <!-- ultra-high z-index -->
-
-        <aside @click.outside="mobileOpen=false" class="absolute left-0 top-0 h-full w-[80vw] max-w-sm
-                  bg-neutral-950 text-neutral-200 border-r border-neutral-800 p-4 space-y-3
-                  shadow-2xl" style="z-index:2147483001">
+        class="fixed inset-0 bg-black/85 z-[2147483000]">
+        <aside @click.outside="mobileOpen=false"
+          class="absolute left-0 top-0 h-full w-[80vw] max-w-sm bg-neutral-950 text-neutral-200 border-r border-neutral-800 p-4 space-y-3 shadow-2xl z-[2147483001]">
           <div class="flex items-center justify-between">
             <span class="font-semibold">Echo Line</span>
             <button @click="mobileOpen=false" class="px-2 py-1 rounded hover:bg-neutral-800">Close</button>
           </div>
-
           <nav class="mt-2 space-y-1">
             <a href="/" class="block rounded px-3 py-2 hover:bg-neutral-800">Home</a>
             <a href="/chapters" class="block rounded px-3 py-2 hover:bg-neutral-800">Chapters</a>
             <a href="/about" class="block rounded px-3 py-2 hover:bg-neutral-800">About</a>
           </nav>
-
-          <div class="mt-4 grid gap-2">
-            <button @click="toggleNeon"
-              class="rounded border border-neutral-800 bg-neutral-900/90 px-3 py-2 hover:bg-neutral-800 text-sm">
-              <span x-text="neonOn ? 'Neon: ON' : 'Neon: OFF'"></span>
-            </button>
-            <button @click="toggleScanlines"
-              class="rounded border border-neutral-800 bg-neutral-900/90 px-3 py-2 hover:bg-neutral-800 text-sm">
-              <span x-text="scanlinesOn ? 'Scanlines: ON' : 'Scanlines: OFF'"></span>
-            </button>
-            <button @click="cycleTheme"
-              class="rounded border border-neutral-800 bg-neutral-900/90 px-3 py-2 hover:bg-neutral-800 text-sm">
-              Surge ⚡
-            </button>
-            <button @click="openSearch"
-              class="rounded border border-neutral-800 bg-neutral-900/90 px-3 py-2 hover:bg-neutral-800 text-sm">
-              Search <kbd class="ml-1 text-neutral-500">/</kbd>
-            </button>
+          <div class="mt-4 border-t border-neutral-800 pt-3 space-y-2">
+            {% if user %}
+            <a href="/account" class="block rounded px-3 py-2 hover:bg-neutral-800 text-sm">{{ user.email or "Account"
+              }}</a>
+            <form action="/auth/logout" method="post">
+              <button
+                class="w-full rounded border border-neutral-800 bg-neutral-900/90 px-3 py-2 hover:bg-neutral-800 text-sm">Logout</button>
+            </form>
+            {% else %}
+            <a href="/auth/login"
+              class="block rounded border border-neutral-800 bg-neutral-900/90 px-3 py-2 hover:bg-neutral-800 text-sm">Login</a>
+            <a href="/auth/register"
+              class="block rounded border border-neutral-800 bg-neutral-900/90 px-3 py-2 hover:bg-neutral-800 text-sm">Create
+              Account</a>
+            {% endif %}
           </div>
         </aside>
       </div>
     </template>
-
   </header>
 
-  <!-- Page -->
-  <main class="mx-auto max-w-6xl w-full px-4 sm:px-6 py-6 sm:py-8">
-    {% block content %}{% endblock %}
-  </main>
+  <main class="mx-auto max-w-6xl w-full px-4 sm:px-6 py-6 sm:py-8">{% block content %}{% endblock %}</main>
 
-  <!-- Footer -->
   <footer class="mt-12 border-t border-neutral-900/70 pt-6 text-center text-xs text-neutral-500">
-    <p>
-      Echo Line is a serialized cyberpunk novel and art project by
-      <a href="/about" class="underline decoration-dotted hover:text-neutral-300">Kirk Fuson</a>.
-      Follow the journey on
-      <a href="https://instagram.com/fumankirk" target="_blank"
-        class="underline decoration-dotted hover:text-neutral-300">@fumankirk</a>.
-    </p>
+    <p>Echo Line is a serialized cyberpunk novel and art project by <a href="/about"
+        class="underline decoration-dotted hover:text-neutral-300">Kirk Fuson</a>.
+      Follow the journey on <a href="https://instagram.com/fumankirk" target="_blank" rel="noopener"
+        class="underline decoration-dotted hover:text-neutral-300">@fumankirk</a>.</p>
   </footer>
 
-  <!-- CRT overlay -->
+  <!-- single global scanline layer -->
   <div class="scanlines"></div>
 
   <!-- Lightbox -->

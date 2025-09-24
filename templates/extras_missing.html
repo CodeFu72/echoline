@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block content %}
+
+<main class="mx-auto max-w-4xl px-4 sm:px-6 py-10">
+    <section class="rounded-xl border border-neutral-800 bg-neutral-950 overflow-hidden">
+        <header class="px-4 py-3 border-b border-neutral-800">
+            <h1 class="text-base font-semibold tracking-wide">terminal://aux/extras</h1>
+            <p class="text-xs text-neutral-400 mt-1">
+                {{ (kind|upper if kind else 'EXTRA') }} for
+                <span class="font-medium">{{ chapter_title or 'Chapter' }}</span>
+            </p>
+        </header>
+
+        <div class="grid md:grid-cols-2">
+            <!-- CRT / random code -->
+            <div class="p-4 md:p-5 border-b md:border-b-0 md:border-r border-neutral-800">
+                <div id="crt"
+                    class="h-[320px] md:h-[420px] rounded-lg bg-neutral-900/60 border border-neutral-800 overflow-hidden relative">
+                    <pre id="crt-code"
+                        class="text-[11px] leading-4 p-3 text-neutral-400 font-mono whitespace-pre-wrap"></pre>
+                    <div class="pointer-events-none absolute inset-0 mix-blend-overlay opacity-40"
+                        style="background:repeating-linear-gradient(0deg, rgba(255,255,255,.06) 0 1px, transparent 1px 3px)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Message / instructions -->
+            <div class="p-4 md:p-5">
+                <div class="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4">
+                    <p class="font-mono text-sm">
+                        <span class="text-cyan-300">></span> mount
+                        <span class="text-amber-300">{{ kind or 'extra' }}</span>.dat …
+                        <span class="text-red-400">not found</span>
+                    </p>
+                    <p class="font-mono text-sm mt-2 text-neutral-300">
+                        Auxiliary file is offline or encrypted for this drop.
+                    </p>
+                    <p class="font-mono text-sm mt-2 text-neutral-400">
+                        Press <kbd class="px-1.5 py-0.5 rounded border border-neutral-700 bg-neutral-900">Esc</kbd>
+                        to return to the chapter.
+                    </p>
+
+                    <div class="mt-4">
+                        <a id="back-link" href="/chapters/{{ chapter_slug or '' }}"
+                            class="inline-flex items-center rounded-lg border border-neutral-800 bg-neutral-900/60 hover:bg-neutral-800 px-4 py-2 text-sm">
+                            Back to Chapter
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script>
+    (function () {
+        const pre = document.getElementById('crt-code');
+        const crt = document.getElementById('crt');
+        const back = document.getElementById('back-link');
+
+        // Make the back button instantly usable
+        try { back?.focus({ preventScroll: true }); } catch { }
+
+        // --- CRT noise (animated, but cheap) ---
+        let LINES = 220;                  // a bit lighter than 260
+        const GLYPHS = "01░▒▓/<>{}[]()*&%$#@=+-.~^:\\|";
+        let width = 64;                   // computed on first render
+        let buf = [];                     // array of strings (each line)
+
+        function r(n) { return Math.floor(Math.random() * n); }
+        function randomLine(w) {
+            let s = "";
+            for (let i = 0; i < w; i++) s += GLYPHS[r(GLYPHS.length)];
+            return s;
+        }
+
+        function computeWidth() {
+            const px = crt.clientWidth || 520;
+            width = Math.max(42, Math.floor(px / 8));
+        }
+
+        function fullRender() {
+            computeWidth();
+            // Keep current scroll feel: regenerate whole buffer once
+            buf = new Array(LINES);
+            for (let i = 0; i < LINES; i++) buf[i] = randomLine(width);
+            pre.textContent = buf.join("\n");
+        }
+
+        // Animate by mutating only a handful of lines each frame, then join once.
+        let playing = true;
+        let rafId = null;
+        let lastTick = 0;
+        const FPS = 8;                   // target fps
+        const MS_PER_FRAME = 1000 / FPS;
+        const LINES_PER_TICK = 5;        // how many lines to mutate per frame
+
+        function tick(ts) {
+            if (!playing) return;
+            if (ts - lastTick >= MS_PER_FRAME) {
+                lastTick = ts;
+                for (let i = 0; i < LINES_PER_TICK; i++) {
+                    const idx = r(LINES);
+                    buf[idx] = randomLine(width);
+                }
+                pre.textContent = buf.join("\n");
+            }
+            rafId = requestAnimationFrame(tick);
+        }
+
+        // Start after first paint
+        requestAnimationFrame(() => {
+            fullRender();
+            rafId = requestAnimationFrame(tick);
+        });
+
+        // Debounced resize (rebuild buffer)
+        let rt;
+        window.addEventListener('resize', () => {
+            clearTimeout(rt);
+            rt = setTimeout(() => {
+                fullRender();
+            }, 120);
+        }, { passive: true });
+
+        // Pause/resume when tab visibility changes (battery-friendly)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                playing = false;
+                if (rafId) cancelAnimationFrame(rafId);
+            } else {
+                playing = true;
+                lastTick = 0;
+                rafId = requestAnimationFrame(tick);
+            }
+        });
+
+        // ESC to go back
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const backUrl = "/chapters/{{ chapter_slug or '' }}";
+                if (document.referrer) history.back();
+                else window.location.href = backUrl;
+            }
+        });
+    }());
+</script>
+
+{% endblock %}

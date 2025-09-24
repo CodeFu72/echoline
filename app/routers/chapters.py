@@ -1,24 +1,26 @@
 # app/routers/chapters.py
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse
-from sqlalchemy.orm import Session
 from sqlalchemy import func, asc, desc, and_, or_
+from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.chapter import Chapter
 
 router = APIRouter()
 
+
 def _templates(request: Request):
-    # Use the shared Jinja instance + helpers registered in main.py
+    """Use the shared Jinja instance + helpers registered in main.py."""
     return request.app.state.templates
 
-# Single source of truth for ordering:
-#   1) display_order ASC (NULLs last via COALESCE to a big number)
-#   2) id ASC (stable tie-breaker)
+
+# ---------- Single source of truth for ordering ----------
+# 1) display_order ASC (NULLs last via COALESCE to a large sentinel)
+# 2) id ASC (stable tie-breaker)
 def _ord_key():
-    # 1e9 is an arbitrarily large sentinel to push NULLs last
     return func.coalesce(Chapter.display_order, 1_000_000_000)
+
 
 @router.get("/", response_class=HTMLResponse)
 def list_chapters(request: Request, db: Session = Depends(get_db)):
@@ -32,6 +34,7 @@ def list_chapters(request: Request, db: Session = Depends(get_db)):
         {"request": request, "chapters": chapters, "title": "Chapters"},
     )
 
+
 @router.get("/{slug}", response_class=HTMLResponse)
 def show_chapter(slug: str, request: Request, db: Session = Depends(get_db)):
     chapter = db.query(Chapter).filter(Chapter.slug == slug).first()
@@ -42,10 +45,22 @@ def show_chapter(slug: str, request: Request, db: Session = Depends(get_db)):
             status_code=404,
         )
 
-    # Normalize the current chapter's ordering key for comparisons
-    cur_key = db.query(func.coalesce(Chapter.display_order, 1_000_000_000)).filter(Chapter.id == chapter.id).scalar()
+    # ---------- Soft gate past Chapter 5 ----------
+    # Gate logic is based on display_order (unset/None = not gated).
+    gate_threshold = 5
+    if (chapter.display_order is not None) and (chapter.display_order > gate_threshold):
+        if not getattr(request.state, "user", None):
+            # Triggers your main.py 401 handler → /auth/login?next=/chapters/{slug}
+            raise HTTPException(status_code=401, detail="Login required to read this chapter.")
 
-    # Prev = the immediately smaller (key, id) by our global ordering
+    # Normalize current chapter's ordering key for comparisons
+    cur_key = (
+        db.query(func.coalesce(Chapter.display_order, 1_000_000_000))
+        .filter(Chapter.id == chapter.id)
+        .scalar()
+    )
+
+    # Prev = immediately smaller (key, id) by our global ordering
     prev = (
         db.query(Chapter)
         .filter(
@@ -58,7 +73,7 @@ def show_chapter(slug: str, request: Request, db: Session = Depends(get_db)):
         .first()
     )
 
-    # Next = the immediately larger (key, id)
+    # Next = immediately larger (key, id)
     next_ = (
         db.query(Chapter)
         .filter(

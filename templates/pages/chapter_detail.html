@@ -26,8 +26,45 @@
   }());
 </script>
 
+<!-- 3) FX seeding via localStorage (no class toggling here; baseUI handles classes) -->
+<script>
+  (function () {
+    const meta = (window.CHAPTER_SEED && window.CHAPTER_SEED.meta) || {};
+    const ui = meta.ui || {};
+    const q = new URLSearchParams(window.location.search);
+    const fxParam = (q.get('fx') || '').toLowerCase();
+
+    // read current stored prefs
+    let neonOn = localStorage.getItem('theme-neon');
+    let scanOn = localStorage.getItem('scanlines');
+
+    // if nothing stored yet, fall back to per-chapter defaults
+    if (neonOn === null && ui.hasOwnProperty('neon')) {
+      neonOn = ui.neon ? '1' : '0';
+      localStorage.setItem('theme-neon', neonOn);
+    }
+    if (scanOn === null && ui.hasOwnProperty('scanlines')) {
+      scanOn = ui.scanlines ? '1' : '0';
+      localStorage.setItem('scanlines', scanOn);
+    }
+
+    // query param quick-switch overrides
+    if (fxParam) {
+      let neon = (localStorage.getItem('theme-neon') === '1');
+      let scan = (localStorage.getItem('scanlines') === '1');
+      if (fxParam === 'off' || fxParam === 'none') { neon = false; scan = false; }
+      if (fxParam.includes('neon')) neon = true;
+      if (fxParam.includes('scan')) scan = true;
+      if (fxParam === 'all') { neon = true; scan = true; }
+      localStorage.setItem('theme-neon', neon ? '1' : '0');
+      localStorage.setItem('scanlines', scan ? '1' : '0');
+    }
+    // baseUI() will read these and apply classes on init
+  })();
+</script>
+
 <article x-data="chapterExtras(window.CHAPTER_SEED)" x-init="init()"
-  class="mx-auto max-w-5xl px-4 sm:px-6 py-6 space-y-8">
+  class="mx-auto max-w-5xl px-4 sm:px-6 py-6 space-y-8 relative">
 
   <!-- Header -->
   <header class="text-center space-y-3">
@@ -46,9 +83,9 @@
     {% endif %}
   </header>
 
-  <!-- Ambient / Reel -->
   <!-- Reel only -->
-  <section x-show="hasReel" x-cloak class="rounded-xl border border-neutral-800 bg-neutral-900/40 p-3 sm:p-4">
+  <section x-show="hasReel" x-cloak class="rounded-xl border border-neutral-800 bg-neutral-900/40 p-3 sm:p-4"
+    aria-label="Reel">
     <div class="flex flex-col items-center justify-center">
       <a :href="state.reel_url" target="_blank" rel="noopener"
         class="inline-flex h-11 items-center justify-center rounded-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-5 transition">
@@ -64,110 +101,371 @@
 
   <hr class="my-8 border-neutral-800" />
 
-  <!-- ===== Bonus Content cards (SAFE: separate Alpine component) ===== -->
-  <section x-data="(() => {
-      const seed = window.CHAPTER_SEED || {};
-      const ex = (seed.meta && seed.meta.extras) || {};
-      const assetsBase = (seed.assetsBase || '').replace(/\/+$/, '');
-      const asset = (k) => {
-        if (!k) return '';
-        if (/^https?:\/\//i.test(k)) return k;
-        const key = String(k).replace(/^\/+/, '');
-        return assetsBase ? `${assetsBase}/${key}` : `/static/${key}`;
-      };
-      const cards = [];
-      if (ex.notes_page) {
-        cards.push({
-          href: ex.notes_page,
-          kicker: 'EXTRA',
-          title: 'Director’s Notes',
-          desc: 'Deep dive commentary, beats, and production scribbles.',
-          thumb: asset('ui/cards/notes_thumb.jpg')
-        });
-      }
-      if (ex.lore_page) {
-        const lore = (seed.meta && seed.meta.lore) || {};
-        cards.push({
-          href: ex.lore_page,
-          kicker: 'LORE',
-          title: lore.name ? `${lore.name} — Profile` : 'Character Profile',
-          desc: 'Bio, signals, and hidden threads in the Echo.',
-          thumb: lore.portrait ? asset(lore.portrait) : ''
-        });
-      }
-      if (ex.sketches_page) {
-        const sk = Array.isArray(seed.meta && seed.meta.sketches) ? seed.meta.sketches : [];
-        let first = '';
-        if (sk.length) {
-          const s0 = typeof sk[0] === 'string' ? sk[0] : (sk[0] && sk[0].src) || '';
-          first = asset(s0);
-        }
-        cards.push({
-          href: ex.sketches_page,
-          kicker: 'GALLERY',
-          title: 'Sketches & Panels',
-          desc: 'Concepts and production frames from the drop.',
-          thumb: first
-        });
-      }
-      return { cards };
-    })()" x-show="cards.length" x-cloak class="space-y-3">
+  {# ===== Bonus Content cards (server-side rendered, modal-aware) ===== #}
+  {% set _meta = chapter.meta or {} %}
+  {% set _extras = _meta.get('extras') or {} %}
+  {% set _lore = _meta.get('lore') or {} %}
+  {% set _sketches = _meta.get('sketches') or [] %}
+  {% set _notes = _meta.get('notes') or {} %}
+
+  {# include music in the has-notes check #}
+  {% set _has_notes =
+  (_notes.get('intro')) or
+  (_notes.get('why')) or
+  (_notes.get('texture')) or
+  (_notes.get('lines') and _notes.get('lines')|length) or
+  (_notes.get('beats') and _notes.get('beats')|length) or
+  (_notes.get('eggs') and _notes.get('eggs')|length) or
+  (_notes.get('music'))
+  %}
+
+  {% set _missing_base = request.url_for('extras_missing') %}
+  {% set _qs_common = 'chapter_slug=' ~ (chapter.slug or '') ~ '&chapter_title=' ~ (chapter.title|urlencode) %}
+  {% set _notes_url = (_extras.get('notes_page') or (_missing_base ~ '?' ~ _qs_common ~ '&kind=notes')) %}
+  {% set _lore_url = (_extras.get('lore_page') or (_missing_base ~ '?' ~ _qs_common ~ '&kind=lore')) %}
+  {% set _lab_url = (_extras.get('lab_page') or (_missing_base ~ '?' ~ _qs_common ~ '&kind=lab')) %}
+  {% set _sketches_url = (_extras.get('sketches_page') or (_missing_base ~ '?' ~ _qs_common ~ '&kind=sketches')) %}
+
+  <section class="space-y-3" aria-label="Bonus content">
     <h2 class="text-lg font-semibold">Bonus Content</h2>
     <ul role="list" class="grid gap-3 sm:grid-cols-2">
-      <template x-for="card in cards" :key="card.href">
-        <li>
-          <a :href="card.href" target="_blank" rel="noopener"
-            class="block rounded-xl border border-neutral-800 bg-neutral-900/40 hover:bg-neutral-900 transition overflow-hidden">
-            <div class="flex items-stretch">
-              <div class="hidden sm:block w-36 h-24 shrink-0 border-r border-neutral-800 bg-neutral-950/40" :style="card.thumb
-    ? `background-image:url('${card.thumb}');background-size:cover;background-position:center;`
-    : ''">
-              </div>
-              <div class="p-4 min-w-0">
-                <div class="text-sm uppercase tracking-widest text-neutral-400" x-text="card.kicker"></div>
-                <div class="font-semibold truncate" x-text="card.title"></div>
-                <p class="mt-1 text-sm text-neutral-400 line-clamp-2" x-text="card.desc"></p>
-              </div>
+      <!-- Director’s Notes card -->
+      <li>
+        {% if _has_notes %}
+        <a href="#" @click.prevent="open('notes')"
+          class="block rounded-xl border border-neutral-800 bg-neutral-900/40 hover:bg-neutral-900 transition overflow-hidden">
+          <div class="flex items-stretch">
+            <div class="hidden sm:block w-36 h-24 shrink-0 border-r border-neutral-800 bg-neutral-950/40"
+              style="background-image:url('{{ asset('ui/cards/notes_thumb.jpg') }}');background-size:cover;background-position:center;">
             </div>
-          </a>
-        </li>
-      </template>
+            <div class="p-4 min-w-0">
+              <div class="text-sm uppercase tracking-widest text-neutral-400">EXTRA</div>
+              <div class="font-semibold truncate">Director’s Notes</div>
+              <p class="mt-1 text-sm text-neutral-400 line-clamp-2">Commentary, beat map, eggs, and a suggested track.
+              </p>
+            </div>
+          </div>
+        </a>
+        {% else %}
+        <a href="{{ _notes_url }}" target="_blank" rel="noopener"
+          class="block rounded-xl border border-neutral-800 bg-neutral-900/40 hover:bg-neutral-900 transition overflow-hidden">
+          <div class="flex items-stretch">
+            <div class="hidden sm:block w-36 h-24 shrink-0 border-r border-neutral-800 bg-neutral-950/40"
+              style="background-image:url('{{ asset('ui/cards/notes_thumb.jpg') }}');background-size:cover;background-position:center;">
+            </div>
+            <div class="p-4 min-w-0">
+              <div class="text-sm uppercase tracking-widest text-neutral-400">EXTRA</div>
+              <div class="font-semibold truncate">Director’s Notes</div>
+              <p class="mt-1 text-sm text-neutral-400 line-clamp-2">Deep dive commentary, beats, and production
+                scribbles.</p>
+            </div>
+          </div>
+        </a>
+        {% endif %}
+      </li>
+
+      <!-- Lore/Profile card -->
+      <li>
+        <a href="{{ _lore_url }}" target="_blank" rel="noopener"
+          class="block rounded-xl border border-neutral-800 bg-neutral-900/40 hover:bg-neutral-900 transition overflow-hidden">
+          <div class="flex items-stretch">
+            <div class="hidden sm:block w-36 h-24 shrink-0 border-r border-neutral-800 bg-neutral-950/40" {% if
+              _lore.get('portrait') %}
+              style="background-image:url('{{ asset(_lore.get('portrait')) }}');background-size:cover;background-position:center;"
+              {% endif %}></div>
+            <div class="p-4 min-w-0">
+              <div class="text-sm uppercase tracking-widest text-neutral-400">LORE</div>
+              <div class="font-semibold truncate">
+                {{ _lore.get('name') ~ ' — Profile' if _lore.get('name') else 'Character Profile' }}
+              </div>
+              <p class="mt-1 text-sm text-neutral-400 line-clamp-2">Bio, signals, and hidden threads in the Echo.</p>
+            </div>
+          </div>
+        </a>
+      </li>
+
+      <!-- Signal Lab card -->
+      <li>
+        <a href="{{ _lab_url }}" target="_blank" rel="noopener"
+          class="block rounded-xl border border-neutral-800 bg-neutral-900/40 hover:bg-neutral-900 transition overflow-hidden">
+          <div class="flex items-stretch">
+            <div class="hidden sm:block w-36 h-24 shrink-0 border-r border-neutral-800 bg-neutral-950/40"></div>
+            <div class="p-4 min-w-0">
+              <div class="text-sm uppercase tracking-widest text-neutral-400">LAB</div>
+              <div class="font-semibold truncate">Signal Lab</div>
+              <p class="mt-1 text-sm text-neutral-400 line-clamp-2">Process notes, tools, and experiments from the run.
+              </p>
+            </div>
+          </div>
+        </a>
+      </li>
+
+      <!-- Sketches card -->
+      {% set _first = (_sketches[0] if _sketches else '') %}
+      {% if _first and _first is string %}
+      {% set _thumb = _first %}
+      {% elif _first %}
+      {% set _thumb = _first.get('src') or '' %}
+      {% else %}
+      {% set _thumb = '' %}
+      {% endif %}
+      <li>
+        <a href="{{ _sketches_url }}" target="_blank" rel="noopener"
+          class="block rounded-xl border border-neutral-800 bg-neutral-900/40 hover:bg-neutral-900 transition overflow-hidden">
+          <div class="flex items-stretch">
+            <div class="hidden sm:block w-36 h-24 shrink-0 border-r border-neutral-800 bg-neutral-950/40" {% if _thumb
+              %}style="background-image:url('{{ asset(_thumb) }}');background-size:cover;background-position:center;" {%
+              endif %}></div>
+            <div class="p-4 min-w-0">
+              <div class="text-sm uppercase tracking-widest text-neutral-400">GALLERY</div>
+              <div class="font-semibold truncate">Sketches &amp; Panels</div>
+              <p class="mt-1 text-sm text-neutral-400 line-clamp-2">Concepts and production frames from the drop.</p>
+            </div>
+          </div>
+        </a>
+      </li>
     </ul>
   </section>
 
-  <!-- ===== Inline EXTRAS (unchanged) ===== -->
-  <section aria-label="Extras" class="rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
-    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-      <h2 class="text-lg font-semibold">Extras</h2>
+  <!-- ===== Echo Line :: SIGNAL BOOST (Share Console) ===== -->
+  <section x-data="shareConsole()" x-init="init()"
+    class="relative rounded-xl border border-neutral-800 bg-neutral-950 overflow-hidden" aria-label="Share console">
+    <style>
+      .sb-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: .75rem
+      }
 
-      <div class="flex flex-wrap items-center gap-2">
-        <template x-if="hasSketches">
-          <button @click="open('sketches')"
-            class="inline-flex h-11 items-center justify-center rounded-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-5 transition">
-            View Sketches
-          </button>
-        </template>
+      @media (min-width:640px) {
+        .sb-grid {
+          grid-template-columns: 1fr auto
+        }
+      }
 
-        <template x-if="hasNotes">
-          <button @click="open('notes')"
-            class="inline-flex h-11 items-center justify-center rounded-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-5 transition">
-            Read Notes
-          </button>
-        </template>
+      .sb-shell {
+        position: relative;
+        padding: 1rem
+      }
 
-        <template x-if="hasLore">
-          <button @click="open('lore')"
-            class="inline-flex h-11 items-center justify-center rounded-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-5 transition">
-            Character Lore
-          </button>
-        </template>
+      .sb-shell::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+          repeating-linear-gradient(0deg, rgba(34, 211, 238, .10) 0 1px, transparent 1px 3px),
+          radial-gradient(900px 500px at 10% -10%, rgba(0, 255, 255, .18), transparent 60%),
+          radial-gradient(900px 500px at 90% 110%, rgba(255, 0, 200, .16), transparent 60%);
+        mix-blend-mode: screen;
+        opacity: .9;
+        animation: sbSweep 6s linear infinite;
+      }
 
-        <template x-if="!hasSketches && !hasNotes && !hasLore">
-          <span class="text-sm text-neutral-400">Bonus content coming soon.</span>
-        </template>
+      @keyframes sbSweep {
+        0% {
+          background-position: 0 0, 0 0, 0 0
+        }
+
+        100% {
+          background-position: 0 8px, 30px 0, -30px 0
+        }
+      }
+
+      .sb-title {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        text-shadow: 0 0 2px #22d3ee, 0 0 8px rgba(34, 211, 238, .55)
+      }
+
+      .crt-caret {
+        display: inline-block;
+        width: .6ch;
+        background: #22d3ee;
+        box-shadow: 0 0 8px #22d3ee;
+        animation: crtCaret 1s steps(2, end) infinite
+      }
+
+      @keyframes crtCaret {
+
+        0%,
+        100% {
+          opacity: 0
+        }
+
+        50% {
+          opacity: 1
+        }
+      }
+
+      .sb-btn {
+        border: 1px solid #1f2937;
+        background: #0b1220;
+        padding: .55rem .8rem;
+        border-radius: .6rem
+      }
+
+      .sb-btn:hover {
+        background: #111a2e
+      }
+
+      .sb-neon {
+        box-shadow: 0 0 0 0 rgba(34, 211, 238, .45);
+        transition: box-shadow .25s ease
+      }
+
+      .sb-neon:hover {
+        box-shadow: 0 0 24px 3px rgba(34, 211, 238, .20)
+      }
+
+      .sb-chip {
+        font-size: .75rem;
+        border: 1px dashed #334155;
+        background: #0b1220;
+        border-radius: .5rem;
+        padding: .25rem .5rem
+      }
+
+      .sb-toast {
+        position: fixed;
+        left: 50%;
+        bottom: 18px;
+        transform: translateX(-50%);
+        background: #0b1220;
+        border: 1px solid #14532d;
+        color: #86efac;
+        padding: .5rem .8rem;
+        border-radius: .5rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, .5)
+      }
+
+      .sb-grid-b {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: .5rem
+      }
+
+      @media (min-width:480px) {
+        .sb-grid-b {
+          grid-template-columns: repeat(2, minmax(0, 1fr))
+        }
+      }
+
+      .sb-glitch {
+        position: absolute;
+        inset: -2px;
+        border-radius: 12px;
+        pointer-events: none;
+        mix-blend-mode: screen;
+        opacity: .9;
+        filter: blur(8px);
+        background: conic-gradient(from 180deg at 30% 30%, rgba(0, 255, 255, .22), transparent 32%), conic-gradient(from 0deg at 70% 70%, rgba(255, 0, 200, .22), transparent 32%), radial-gradient(1200px 600px at 50% 0%, rgba(34, 211, 238, .12), transparent 60%);
+        animation: sbGlitchRoll 8s ease-in-out infinite
+      }
+
+      @keyframes sbGlitchRoll {
+
+        0%,
+        100% {
+          transform: rotate(0deg);
+          opacity: .85
+        }
+
+        50% {
+          transform: rotate(1deg);
+          opacity: 1
+        }
+      }
+    </style>
+
+    <div class="sb-glitch" aria-hidden="true"></div>
+
+    <div class="sb-shell sb-grid">
+      <div class="min-w-0">
+        <div class="flex items-center gap-2">
+          <span class="sb-chip">terminal://signal-boost</span>
+          <span class="sb-chip" x-text="host"></span>
+        </div>
+        <h2 class="sb-title mt-2 text-base">> broadcast "<span x-text="title"></span>"<span class="crt-caret"></span>
+        </h2>
+
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+          <code class="text-xs bg-neutral-900 border border-neutral-800 rounded px-2 py-1 select-all break-all"
+            x-text="shortUrl" aria-label="Share URL"></code>
+          <button @click="copy()" class="sb-btn sb-neon text-sm">Copy Link</button>
+          <button @click="sysShare()" class="sb-btn text-sm" x-show="canShare">System Share</button>
+        </div>
+      </div>
+
+      <div class="self-center">
+        <div class="sb-grid-b">
+          <a :href="xUrl" target="_blank" rel="noopener" class="sb-btn text-center">Post to X/Twitter</a>
+          <a :href="redditUrl" target="_blank" rel="noopener" class="sb-btn text-center">Share on Reddit</a>
+          <a :href="mailtoUrl" class="sb-btn text-center">Email a Friend</a>
+          <a :href="mastodonUrl" target="_blank" rel="noopener" class="sb-btn text-center">To Mastodon</a>
+        </div>
       </div>
     </div>
+
+    <!-- toast -->
+    <div x-show="toast" x-transition.opacity.duration.200ms class="sb-toast" x-text="toast" @click="toast=''"
+      role="status" aria-live="polite"></div>
+
+    <script>
+      function shareConsole() {
+        return {
+          title: "{{ chapter.title|replace('"','\\"') }}",
+          url: "",
+          shortUrl: "",
+          host: "",
+          canShare: false,
+          toast: "",
+          xUrl: "#", redditUrl: "#", mailtoUrl: "#", mastodonUrl: "#",
+          utm(u) {
+            try {
+              const url = new URL(u);
+              url.searchParams.set("utm_source", "share");
+              url.searchParams.set("utm_medium", "reader");
+              url.searchParams.set("utm_campaign", "echo-line");
+              return url.toString();
+            } catch { return u }
+          },
+          init() {
+            const loc = window.location;
+            this.url = this.utm(loc.href);
+            this.shortUrl = this.url.replace(/^https?:\/\//, '');
+            this.host = loc.host;
+
+            const text = encodeURIComponent(`${this.title} — Echo Line`);
+            const link = encodeURIComponent(this.url);
+
+            this.xUrl = `https://twitter.com/intent/tweet?text=${text}&url=${link}`;
+            this.redditUrl = `https://www.reddit.com/submit?title=${text}&url=${link}`;
+            this.mailtoUrl = `mailto:?subject=${text}&body=${link}`;
+            this.mastodonUrl = `https://mastodonshare.com/?text=${text}%20${link}`;
+
+            this.canShare = !!(navigator.share);
+          },
+          async copy() {
+            try {
+              await navigator.clipboard.writeText(this.url);
+              this.toast = "Copied link to clipboard.";
+              setTimeout(() => this.toast = "", 1800);
+            } catch (e) {
+              this.toast = "Copy failed. Long-press the link to select.";
+              setTimeout(() => this.toast = "", 2200);
+            }
+          },
+          async sysShare() {
+            if (!navigator.share) return;
+            try {
+              await navigator.share({ title: this.title, url: this.url, text: `${this.title} — Echo Line` });
+            } catch (e) { /* user cancelled */ }
+          }
+        }
+      }
+    </script>
   </section>
+  <!-- ===== /Signal Boost ===== -->
 
   <!-- NAV -->
   <nav class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3"
@@ -216,15 +514,16 @@
     {% endif %}
   </nav>
 
-  <!-- === MODALS (inline; no teleport) === -->
+  <!-- === MODALS === -->
 
   <!-- Backdrop -->
   <div x-show="openKey !== null" x-transition.opacity x-cloak class="fixed inset-0 z-[9998] bg-black/70"
     @click.self="close()" @keydown.escape.window="close()"></div>
 
   <!-- SKETCHES -->
-  <div :class="openKey==='sketches' ? '' : 'hidden'"
-    class="fixed inset-x-0 top-[8vh] z-[9999] mx-auto w-[92vw] max-w-5xl rounded-xl border border-neutral-800 bg-neutral-950 p-4 sm:p-6 shadow-xl">
+  <div x-show="openKey==='sketches'" x-cloak
+    class="fixed inset-x-0 top-[8vh] z-[9999] mx-auto w-[92vw] max-w-5xl rounded-xl border border-neutral-800 bg-neutral-950 p-4 sm:p-6 shadow-xl"
+    role="dialog" aria-modal="true" aria-label="Sketches modal">
     <header class="flex items-center justify-between mb-3">
       <h3 class="text-lg font-semibold">Sketches &amp; Panels</h3>
       <button @click="close()" class="px-3 py-1 rounded border border-neutral-700 hover:bg-neutral-800">Close</button>
@@ -250,8 +549,9 @@
   </div>
 
   <!-- NOTES -->
-  <div :class="openKey==='notes' ? '' : 'hidden'"
-    class="fixed inset-x-0 top-[10vh] z-[9999] mx-auto w-[92vw] max-w-3xl rounded-xl border border-neutral-800 bg-neutral-950 p-4 sm:p-6 shadow-xl">
+  <div x-show="openKey==='notes'" x-cloak
+    class="fixed inset-x-0 top-[10vh] z-[9999] mx-auto w-[92vw] max-w-3xl rounded-xl border border-neutral-800 bg-neutral-950 p-4 sm:p-6 shadow-xl"
+    role="dialog" aria-modal="true" aria-label="Notes modal">
     <header class="flex items-center justify-between mb-3">
       <h3 class="text-lg font-semibold">Author Notes</h3>
       <button @click="close()" class="px-3 py-1 rounded border border-neutral-700 hover:bg-neutral-800">Close</button>
@@ -280,14 +580,26 @@
         </ul>
       </div>
 
-      <p x-show="!(state.notes?.intro) && !(state.notes?.beats?.length) && !(state.notes?.eggs?.length)"
+      <div x-show="state.notes?.music" class="mt-4">
+        <hr class="my-4 border-neutral-800" />
+        <h4 class="text-base font-semibold">Suggested Track</h4>
+        <p class="text-sm text-neutral-400">
+          <a :href="state.notes.music" target="_blank" rel="noopener"
+            class="text-cyan-400 hover:text-cyan-300 underline">
+            Listen on YouTube
+          </a>
+        </p>
+      </div>
+
+      <p x-show="!(state.notes?.intro) && !(state.notes?.beats?.length) && !(state.notes?.eggs?.length) && !(state.notes?.music)"
         class="text-neutral-400">No notes yet.</p>
     </div>
   </div>
 
   <!-- LORE -->
-  <div :class="openKey==='lore' ? '' : 'hidden'"
-    class="fixed inset-x-0 top-[12vh] z-[9999] mx-auto w-[92vw] max-w-3xl rounded-xl border border-neutral-800 bg-neutral-950 p-4 sm:p-6 shadow-xl">
+  <div x-show="openKey==='lore'" x-cloak
+    class="fixed inset-x-0 top-[12vh] z-[9999] mx-auto w-[92vw] max-w-3xl rounded-xl border border-neutral-800 bg-neutral-950 p-4 sm:p-6 shadow-xl"
+    role="dialog" aria-modal="true" aria-label="Lore modal">
     <header class="flex items-center justify-between mb-3">
       <h3 class="text-lg font-semibold">Character Lore</h3>
       <button @click="close()" class="px-3 py-1 rounded border border-neutral-700 hover:bg-neutral-800">Close</button>
@@ -305,7 +617,6 @@
           </div>
         </div>
 
-        <!-- Safe CTA: link out to standalone lore page if present -->
         <div x-show="window.CHAPTER_SEED?.meta?.extras?.lore_page" class="mt-3">
           <a :href="window.CHAPTER_SEED.meta.extras.lore_page" target="_blank" rel="noopener"
             class="inline-flex h-10 items-center justify-center rounded-full border border-neutral-700 bg-neutral-900/60 hover:bg-neutral-800 px-4 text-sm">
@@ -336,6 +647,27 @@
       </div>
     </div>
   </div>
+
+  <script>
+    (function () {
+      const uid = {{ (request.session.get('user_id') is not none)| tojson
+    }};
+    const cid = {{ chapter.id }};
+    if (!uid || !cid) return;
+
+    // fire after ~15s or scroll ~40%
+    let fired = false;
+    function send() {
+      if (fired) return; fired = true;
+      fetch('/t/read?chapter_id=' + cid, { method: 'POST', headers: { 'X-Requested-With': 'fetch' } });
+    }
+    setTimeout(send, 15000);
+    window.addEventListener('scroll', () => {
+      const y = window.scrollY, h = document.documentElement.scrollHeight - innerHeight;
+      if (h > 0 && y / h > 0.4) send();
+    }, { passive: true });
+    }) ();
+  </script>
 
 </article>
 {% endblock %}

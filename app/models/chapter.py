@@ -6,8 +6,8 @@ from app.db.base import Base
 class Chapter(Base):
     __tablename__ = "chapters"
 
-    id = Column(Integer, primary_key=True, index=True)
-    slug = Column(String(120), unique=True, index=True, nullable=False)
+    id = Column(Integer, primary_key=True)
+    slug = Column(String(120), unique=True, nullable=False)
     title = Column(String(200), nullable=False)
     subtitle = Column(String(240), nullable=True)
 

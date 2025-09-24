@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="mx-auto max-w-3xl space-y-6">
+    <header>
+        <h1 class="neon-title text-2xl font-bold" data-text="My Reading">My Reading</h1>
+        <p class="text-neutral-400 text-sm">Welcome back, {{ (user.email or "").split('@')[0] }}.</p>
+    </header>
+
+    {% if chapters %}
+    <ul class="grid gap-2">
+        {% for c in chapters %}
+        <li class="rounded border border-neutral-800 bg-neutral-900/40 hover:bg-neutral-900">
+            <a class="flex items-center justify-between p-3" href="/chapters/{{ c.slug }}">
+                <div class="min-w-0">
+                    <p class="font-medium truncate">{{ c.title }}</p>
+                    <p class="text-xs text-neutral-500 truncate">{{ c.subtitle or c.teaser|default("", true) }}</p>
+                </div>
+                <span class="text-xs border border-neutral-700 rounded px-2 py-1">Open</span>
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-neutral-400 text-sm">No reading history yet. <a class="underline" href="/chapters">Start with Chapter
+            1</a>.</p>
+    {% endif %}
+</section>
+{% endblock %}

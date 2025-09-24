@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="mx-auto max-w-3xl space-y-6">
+    <header class="space-y-1">
+        <h1 class="text-2xl font-semibold">Welcome{% if me.email %}, {{ me.email }}{% endif %}</h1>
+        <p class="text-neutral-400 text-sm">Your recent reading activity lives here.</p>
+    </header>
+
+    {% if events|length == 0 %}
+    <p class="text-neutral-400">No reading history yet. <a class="underline" href="/chapters">Start with Chapter 1</a>.
+    </p>
+    {% else %}
+    <ul class="divide-y divide-neutral-800 rounded-xl border border-neutral-800 overflow-hidden">
+        {% for e in events %}
+        {% set ch = chapters.get(e.chapter_id) %}
+        <li class="p-4 flex items-center justify-between">
+            <div class="min-w-0">
+                <a class="font-medium hover:underline" href="/chapters/{{ ch.slug if ch else '' }}">
+                    {{ ch.title if ch else "Unknown Chapter" }}
+                </a>
+                <div class="text-xs text-neutral-400 mt-1">
+                    Last read: {{ e.last_read_at.strftime("%b %d, %Y %I:%M %p") if e.last_read_at else "—" }}
+                </div>
+            </div>
+            <a href="/chapters/{{ ch.slug if ch else '' }}"
+                class="shrink-0 inline-flex items-center px-3 py-1 rounded border border-neutral-700 hover:bg-neutral-800 text-sm">
+                Continue
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <form class="pt-2" action="/auth/logout" method="post">
+        <button class="text-sm underline text-neutral-400 hover:text-neutral-200">Log out</button>
+    </form>
+</section>
+{% endblock %}

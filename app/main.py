@@ -1,13 +1,15 @@
 # app/main.py
 import os
 import hashlib
+from datetime import datetime
+
 import markdown2
 from dotenv import load_dotenv
-
-from fastapi import FastAPI, Request, Depends, Body
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI, Request, Depends, Body, HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from sqlalchemy.orm import Session
@@ -17,23 +19,84 @@ import boto3
 from botocore.client import Config as BotoConfig
 from botocore.exceptions import BotoCoreError, ClientError
 
-# Load env vars (.env)
+# ---- Load env (.env) ----
 load_dotenv()
 
-# DB + routers
+# ---- DB + models ----
 from app.db.session import get_db
 from app.models.chapter import Chapter
+from app.models.user import User
+
+# ---- Routers ----
 from app.routers.chapters import router as chapters_router
 from app.routers.admin import router as admin_router
 from app.routers import about
+from app.routers import auth as auth_router
+from app.routers import account as account_router
+from app.routers import telemetry
+from app.routers import extras as extras_router
 
 app = FastAPI(title="Echo Line")
 
-# ---- Middleware ----
-app.add_middleware(GZipMiddleware, minimum_size=500)
-app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY", "dev-secret-change-me"))
+# =============================================================================
+# Middleware
+# =============================================================================
 
-# ---- Static & Templates ----
+class UserAttachMiddleware(BaseHTTPMiddleware):
+    """
+    Attaches request.state.user = {'id', 'email'} if session has 'user_id'.
+    MUST run *after* SessionMiddleware, so we add it to the stack *before*
+    SessionMiddleware (making it the inner middleware).
+    """
+    async def dispatch(self, request: Request, call_next):
+        request.state.user = None
+        uid = None
+        try:
+            # Will raise AssertionError if SessionMiddleware hasn't run.
+            uid = request.session.get("user_id")
+        except AssertionError:
+            uid = None
+
+        if uid:
+            db = None
+            try:
+                db = next(get_db())
+                row = db.query(User.id, User.email).filter(User.id == uid).first()
+                if row:
+                    request.state.user = {"id": row.id, "email": row.email}
+            except Exception:
+                request.state.user = None
+            finally:
+                if db:
+                    try:
+                        db.close()
+                    except Exception:
+                        pass
+
+        return await call_next(request)
+
+# Order matters:
+# 1) Add UserAttach first (inner)
+app.add_middleware(UserAttachMiddleware)
+# 2) Then sessions (outer of user attach)
+app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY", "dev-secret-change-me"))
+# 3) Then gzip etc.
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
+# Optional: redirect HTML GET 401s to /auth/login?next=...
+@app.exception_handler(401)
+async def handle_unauthorized(request: Request, exc: HTTPException):
+    accepts_html = "text/html" in (request.headers.get("accept") or "")
+    if request.method == "GET" and accepts_html:
+        next_path = str(request.url.path)
+        if request.url.query:
+            next_path += f"?{request.url.query}"
+        return RedirectResponse(url=f"/auth/login?next={next_path}", status_code=303)
+    return JSONResponse({"detail": "Unauthorized"}, status_code=401)
+
+# =============================================================================
+# Static & Templates
+# =============================================================================
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 app.state.templates = templates
@@ -62,8 +125,8 @@ def md_filter(text: str) -> str:
 
 templates.env.filters["md"] = md_filter
 
-# Optional ambient
-templates.env.globals["YT_AMBIENT_URL"] = os.getenv("YT_AMBIENT_URL", "")
+# Footer/helper: use as {{ (now().year if now else '') }}
+templates.env.globals["now"] = lambda: datetime.now()
 
 # ---- CSS cache-busting (no client JS) ----
 def _static_file_version(path: str) -> str:
@@ -80,7 +143,9 @@ SITE_CSS_PATH = os.path.join("static", "css", "site.css")
 STATIC_VERSION = _static_file_version(SITE_CSS_PATH)
 templates.env.globals["STATIC_VERSION"] = STATIC_VERSION
 
-# ---- S3 / Linode Object Storage presign ----
+# =============================================================================
+# S3 / Linode Object Storage presign
+# =============================================================================
 S3_BUCKET = os.getenv("S3_BUCKET", "")
 S3_REGION = os.getenv("S3_REGION", "")
 S3_ENDPOINT = os.getenv("S3_ENDPOINT", "")  # e.g. https://us-southeast-1.linodeobjects.com
@@ -96,7 +161,7 @@ def _s3_client():
         endpoint_url=S3_ENDPOINT,
         aws_access_key_id=S3_ACCESS_KEY,
         aws_secret_access_key=S3_SECRET_KEY,
-        config=BotoConfig(s3={"addressing_style": "virtual"})  # bucket subdomain style
+        config=BotoConfig(s3={"addressing_style": "virtual"}),
     )
 
 def _public_url_for(key: str) -> str:
@@ -118,13 +183,11 @@ def _presign_put(key: str, content_type: str, expires: int = 300) -> dict:
                 "Bucket": S3_BUCKET,
                 "Key": key,
                 "ContentType": content_type or "application/octet-stream",
-                # No 'ACL' here -> no need to send x-amz-acl from the browser
             },
             ExpiresIn=expires,
         )
     except (BotoCoreError, ClientError) as e:
         raise RuntimeError(f"Presign failed: {e}") from e
-
     return {"upload_url": upload_url, "public_url": _public_url_for(key)}
 
 @app.post("/admin/uploads/presign")
@@ -143,8 +206,9 @@ def presign_upload(payload: dict = Body(...)):
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
-# -----------------------
-
+# =============================================================================
+# Routes
+# =============================================================================
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request, db: Session = Depends(get_db)):
     latest = db.query(Chapter).order_by(Chapter.created_at.desc()).first()
@@ -158,3 +222,7 @@ def home(request: Request, db: Session = Depends(get_db)):
 app.include_router(chapters_router, prefix="/chapters", tags=["chapters"])
 app.include_router(admin_router)
 app.include_router(about.router, prefix="/about")
+app.include_router(auth_router.router)      # /auth/...
+app.include_router(account_router.router)   # /account
+app.include_router(telemetry.router)
+app.include_router(extras_router.router)
