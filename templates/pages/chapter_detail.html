@@ -1,6 +1,23 @@
 {% extends "base.html" %}
 {% block content %}
 
+<!-- iOS modal scrolling helper -->
+<style>
+  .modal-scroll {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    max-height: 80vh;
+  }
+
+  /* Use dynamic viewport on modern mobile for better sizing */
+  @supports(height: 1dvh) {
+    .modal-scroll {
+      max-height: 80dvh;
+    }
+  }
+</style>
+
 <!-- 1) Seed JSON -->
 <script id="chapter-seed" type="application/json">
 {{ {
@@ -34,11 +51,9 @@
     const q = new URLSearchParams(window.location.search);
     const fxParam = (q.get('fx') || '').toLowerCase();
 
-    // read current stored prefs
     let neonOn = localStorage.getItem('theme-neon');
     let scanOn = localStorage.getItem('scanlines');
 
-    // if nothing stored yet, fall back to per-chapter defaults
     if (neonOn === null && ui.hasOwnProperty('neon')) {
       neonOn = ui.neon ? '1' : '0';
       localStorage.setItem('theme-neon', neonOn);
@@ -48,7 +63,6 @@
       localStorage.setItem('scanlines', scanOn);
     }
 
-    // query param quick-switch overrides
     if (fxParam) {
       let neon = (localStorage.getItem('theme-neon') === '1');
       let scan = (localStorage.getItem('scanlines') === '1');
@@ -59,12 +73,40 @@
       localStorage.setItem('theme-neon', neon ? '1' : '0');
       localStorage.setItem('scanlines', scan ? '1' : '0');
     }
-    // baseUI() will read these and apply classes on init
   })();
 </script>
 
-<article x-data="chapterExtras(window.CHAPTER_SEED)" x-init="init()"
-  class="mx-auto max-w-5xl px-4 sm:px-6 py-6 space-y-8 relative">
+<!-- 4) iOS-safe background scroll lock (preserves modal scrolling) -->
+<script>
+  (function () {
+    let _lockY = 0;
+    window.lockScroll = function () {
+      if (document.body.dataset.locked === '1') return;
+      _lockY = window.scrollY || document.documentElement.scrollTop || 0;
+      document.body.dataset.locked = '1';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${_lockY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+    };
+    window.unlockScroll = function () {
+      if (document.body.dataset.locked !== '1') return;
+      document.body.dataset.locked = '0';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.width = '';
+      window.scrollTo({ top: _lockY, behavior: 'instant' });
+    };
+  })();
+</script>
+
+<article x-data="chapterExtras(window.CHAPTER_SEED)" x-init="
+    init();
+    $watch('openKey', v => { if (v !== null) lockScroll(); else unlockScroll(); });
+  " class="mx-auto max-w-5xl px-4 sm:px-6 py-6 space-y-8 relative">
 
   <!-- Header -->
   <header class="text-center space-y-3">
@@ -108,7 +150,6 @@
   {% set _sketches = _meta.get('sketches') or [] %}
   {% set _notes = _meta.get('notes') or {} %}
 
-  {# include music in the has-notes check #}
   {% set _has_notes =
   (_notes.get('intro')) or
   (_notes.get('why')) or
@@ -214,8 +255,8 @@
           class="block rounded-xl border border-neutral-800 bg-neutral-900/40 hover:bg-neutral-900 transition overflow-hidden">
           <div class="flex items-stretch">
             <div class="hidden sm:block w-36 h-24 shrink-0 border-r border-neutral-800 bg-neutral-950/40" {% if _thumb
-              %}style="background-image:url('{{ asset(_thumb) }}');background-size:cover;background-position:center;" {%
-              endif %}></div>
+              %} style="background-image:url('{{ asset(_thumb) }}');background-size:cover;background-position:center;"
+              {% endif %}></div>
             <div class="p-4 min-w-0">
               <div class="text-sm uppercase tracking-widest text-neutral-400">GALLERY</div>
               <div class="font-semibold truncate">Sketches &amp; Panels</div>
@@ -358,8 +399,10 @@
         mix-blend-mode: screen;
         opacity: .9;
         filter: blur(8px);
-        background: conic-gradient(from 180deg at 30% 30%, rgba(0, 255, 255, .22), transparent 32%), conic-gradient(from 0deg at 70% 70%, rgba(255, 0, 200, .22), transparent 32%), radial-gradient(1200px 600px at 50% 0%, rgba(34, 211, 238, .12), transparent 60%);
-        animation: sbGlitchRoll 8s ease-in-out infinite
+        background: conic-gradient(from 180deg at 30% 30%, rgba(0, 255, 255, .22), transparent 32%),
+          conic-gradient(from 0deg at 70% 70%, rgba(255, 0, 200, .22), transparent 32%),
+          radial-gradient(1200px 600px at 50% 0%, rgba(34, 211, 238, .12), transparent 60%);
+        animation: sbGlitchRoll 8s ease-in-out infinite;
       }
 
       @keyframes sbGlitchRoll {
@@ -406,7 +449,6 @@
       </div>
     </div>
 
-    <!-- toast -->
     <div x-show="toast" x-transition.opacity.duration.200ms class="sb-toast" x-text="toast" @click="toast=''"
       role="status" aria-live="polite"></div>
 
@@ -414,53 +456,24 @@
       function shareConsole() {
         return {
           title: "{{ chapter.title|replace('"','\\"') }}",
-          url: "",
-          shortUrl: "",
-          host: "",
-          canShare: false,
-          toast: "",
+          url: "", shortUrl: "", host: "", canShare: false, toast: "",
           xUrl: "#", redditUrl: "#", mailtoUrl: "#", mastodonUrl: "#",
-          utm(u) {
-            try {
-              const url = new URL(u);
-              url.searchParams.set("utm_source", "share");
-              url.searchParams.set("utm_medium", "reader");
-              url.searchParams.set("utm_campaign", "echo-line");
-              return url.toString();
-            } catch { return u }
-          },
+          utm(u) { try { const url = new URL(u); url.searchParams.set("utm_source", "share"); url.searchParams.set("utm_medium", "reader"); url.searchParams.set("utm_campaign", "echo-line"); return url.toString(); } catch { return u } },
           init() {
             const loc = window.location;
             this.url = this.utm(loc.href);
             this.shortUrl = this.url.replace(/^https?:\/\//, '');
             this.host = loc.host;
-
             const text = encodeURIComponent(`${this.title} — Echo Line`);
             const link = encodeURIComponent(this.url);
-
             this.xUrl = `https://twitter.com/intent/tweet?text=${text}&url=${link}`;
             this.redditUrl = `https://www.reddit.com/submit?title=${text}&url=${link}`;
             this.mailtoUrl = `mailto:?subject=${text}&body=${link}`;
             this.mastodonUrl = `https://mastodonshare.com/?text=${text}%20${link}`;
-
-            this.canShare = !!(navigator.share);
+            this.canShare = !!navigator.share;
           },
-          async copy() {
-            try {
-              await navigator.clipboard.writeText(this.url);
-              this.toast = "Copied link to clipboard.";
-              setTimeout(() => this.toast = "", 1800);
-            } catch (e) {
-              this.toast = "Copy failed. Long-press the link to select.";
-              setTimeout(() => this.toast = "", 2200);
-            }
-          },
-          async sysShare() {
-            if (!navigator.share) return;
-            try {
-              await navigator.share({ title: this.title, url: this.url, text: `${this.title} — Echo Line` });
-            } catch (e) { /* user cancelled */ }
-          }
+          async copy() { try { await navigator.clipboard.writeText(this.url); this.toast = 'Copied link to clipboard.'; setTimeout(() => this.toast = '', 1800); } catch { this.toast = 'Copy failed. Long-press the link to select.'; setTimeout(() => this.toast = '', 2200); } },
+          async sysShare() { if (!navigator.share) return; try { await navigator.share({ title: this.title, url: this.url, text: `${this.title} — Echo Line` }); } catch { } }
         }
       }
     </script>
@@ -522,127 +535,133 @@
 
   <!-- SKETCHES -->
   <div x-show="openKey==='sketches'" x-cloak
-    class="fixed inset-x-0 top-[8vh] z-[9999] mx-auto w-[92vw] max-w-5xl rounded-xl border border-neutral-800 bg-neutral-950 p-4 sm:p-6 shadow-xl"
+    class="fixed inset-x-0 top-[8vh] z-[9999] mx-auto w-[92vw] max-w-5xl rounded-xl border border-neutral-800 bg-neutral-950 shadow-xl"
     role="dialog" aria-modal="true" aria-label="Sketches modal">
-    <header class="flex items-center justify-between mb-3">
-      <h3 class="text-lg font-semibold">Sketches &amp; Panels</h3>
-      <button @click="close()" class="px-3 py-1 rounded border border-neutral-700 hover:bg-neutral-800">Close</button>
-    </header>
+    <div class="modal-scroll p-4 sm:p-6" style="max-height:84vh">
+      <header class="flex items-center justify-between mb-3">
+        <h3 class="text-lg font-semibold">Sketches &amp; Panels</h3>
+        <button @click="close()" class="px-3 py-1 rounded border border-neutral-700 hover:bg-neutral-800">Close</button>
+      </header>
 
-    <ul role="list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-      <template x-for="(img, idx) in (state.sketches || [])" :key="img?.src || idx">
-        <li>
-          <button @click="$dispatch('open-lightbox', img?.src || '')"
-            class="block w-full aspect-[4/3] overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900/40 hover:bg-neutral-900"
-            :disabled="!img?.src">
-            <img :src="img?.src || ''" :alt="img?.alt || 'Sketch'" class="w-full h-full object-cover" loading="lazy"
-              decoding="async">
-          </button>
-          <p class="mt-1 text-xs text-neutral-400" x-text="img?.caption || ''"></p>
+      <ul role="list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+        <template x-for="(img, idx) in (state.sketches || [])" :key="img?.src || idx">
+          <li>
+            <button @click="$dispatch('open-lightbox', img?.src || '')"
+              class="block w-full aspect-[4/3] overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900/40 hover:bg-neutral-900"
+              :disabled="!img?.src">
+              <img :src="img?.src || ''" :alt="img?.alt || 'Sketch'" class="w-full h-full object-cover" loading="lazy"
+                decoding="async">
+            </button>
+            <p class="mt-1 text-xs text-neutral-400" x-text="img?.caption || ''"></p>
+          </li>
+        </template>
+
+        <li x-show="!(state.sketches && state.sketches.length)" class="col-span-full text-sm text-neutral-400">
+          No sketches yet.
         </li>
-      </template>
-
-      <li x-show="!(state.sketches && state.sketches.length)" class="col-span-full text-sm text-neutral-400">
-        No sketches yet.
-      </li>
-    </ul>
+      </ul>
+    </div>
   </div>
 
   <!-- NOTES -->
   <div x-show="openKey==='notes'" x-cloak
-    class="fixed inset-x-0 top-[10vh] z-[9999] mx-auto w-[92vw] max-w-3xl rounded-xl border border-neutral-800 bg-neutral-950 p-4 sm:p-6 shadow-xl"
+    class="fixed inset-x-0 top-[10vh] z-[9999] mx-auto w-[92vw] max-w-3xl rounded-xl border border-neutral-800 bg-neutral-950 shadow-xl"
     role="dialog" aria-modal="true" aria-label="Notes modal">
-    <header class="flex items-center justify-between mb-3">
-      <h3 class="text-lg font-semibold">Author Notes</h3>
-      <button @click="close()" class="px-3 py-1 rounded border border-neutral-700 hover:bg-neutral-800">Close</button>
-    </header>
+    <div class="modal-scroll p-4 sm:p-6" style="max-height:80vh">
+      <header class="flex items-center justify-between mb-3">
+        <h3 class="text-lg font-semibold">Author Notes</h3>
+        <button @click="close()" class="px-3 py-1 rounded border border-neutral-700 hover:bg-neutral-800">Close</button>
+      </header>
 
-    <div class="prose prose-invert max-w-none text-sm leading-relaxed">
-      <p x-text="state.notes?.intro || ''"></p>
+      <div class="prose prose-invert max-w-none text-sm leading-relaxed">
+        <p x-text="state.notes?.intro || ''"></p>
 
-      <div x-show="(state.notes?.beats || []).length">
-        <hr class="my-4 border-neutral-800" />
-        <h4 class="text-base font-semibold">Beat Map</h4>
-        <ol class="list-decimal pl-5 space-y-1">
-          <template x-for="(b, i) in (state.notes?.beats || [])" :key="i">
-            <li x-text="b"></li>
-          </template>
-        </ol>
+        <div x-show="(state.notes?.beats || []).length">
+          <hr class="my-4 border-neutral-800" />
+          <h4 class="text-base font-semibold">Beat Map</h4>
+          <ol class="list-decimal pl-5 space-y-1">
+            <template x-for="(b, i) in (state.notes?.beats || [])" :key="i">
+              <li x-text="b"></li>
+            </template>
+          </ol>
+        </div>
+
+        <div x-show="(state.notes?.eggs || []).length">
+          <hr class="my-4 border-neutral-800" />
+          <h4 class="text-base font-semibold">Easter Eggs</h4>
+          <ul class="list-disc pl-5 space-y-1">
+            <template x-for="(e, i) in (state.notes?.eggs || [])" :key="i">
+              <li x-text="e"></li>
+            </template>
+          </ul>
+        </div>
+
+        <div x-show="state.notes?.music" class="mt-4">
+          <hr class="my-4 border-neutral-800" />
+          <h4 class="text-base font-semibold">Suggested Track</h4>
+          <p class="text-sm text-neutral-400">
+            <a :href="state.notes.music" target="_blank" rel="noopener"
+              class="text-cyan-400 hover:text-cyan-300 underline">
+              Listen on YouTube
+            </a>
+          </p>
+        </div>
+
+        <p x-show="!(state.notes?.intro) && !(state.notes?.beats?.length) && !(state.notes?.eggs?.length) && !(state.notes?.music)"
+          class="text-neutral-400">No notes yet.</p>
       </div>
-
-      <div x-show="(state.notes?.eggs || []).length">
-        <hr class="my-4 border-neutral-800" />
-        <h4 class="text-base font-semibold">Easter Eggs</h4>
-        <ul class="list-disc pl-5 space-y-1">
-          <template x-for="(e, i) in (state.notes?.eggs || [])" :key="i">
-            <li x-text="e"></li>
-          </template>
-        </ul>
-      </div>
-
-      <div x-show="state.notes?.music" class="mt-4">
-        <hr class="my-4 border-neutral-800" />
-        <h4 class="text-base font-semibold">Suggested Track</h4>
-        <p class="text-sm text-neutral-400">
-          <a :href="state.notes.music" target="_blank" rel="noopener"
-            class="text-cyan-400 hover:text-cyan-300 underline">
-            Listen on YouTube
-          </a>
-        </p>
-      </div>
-
-      <p x-show="!(state.notes?.intro) && !(state.notes?.beats?.length) && !(state.notes?.eggs?.length) && !(state.notes?.music)"
-        class="text-neutral-400">No notes yet.</p>
     </div>
   </div>
 
   <!-- LORE -->
   <div x-show="openKey==='lore'" x-cloak
-    class="fixed inset-x-0 top-[12vh] z-[9999] mx-auto w-[92vw] max-w-3xl rounded-xl border border-neutral-800 bg-neutral-950 p-4 sm:p-6 shadow-xl"
+    class="fixed inset-x-0 top-[12vh] z-[9999] mx-auto w-[92vw] max-w-3xl rounded-xl border border-neutral-800 bg-neutral-950 shadow-xl"
     role="dialog" aria-modal="true" aria-label="Lore modal">
-    <header class="flex items-center justify-between mb-3">
-      <h3 class="text-lg font-semibold">Character Lore</h3>
-      <button @click="close()" class="px-3 py-1 rounded border border-neutral-700 hover:bg-neutral-800">Close</button>
-    </header>
+    <div class="modal-scroll p-4 sm:p-6" style="max-height:78vh">
+      <header class="flex items-center justify-between mb-3">
+        <h3 class="text-lg font-semibold">Character Lore</h3>
+        <button @click="close()" class="px-3 py-1 rounded border border-neutral-700 hover:bg-neutral-800">Close</button>
+      </header>
 
-    <div class="space-y-4">
-      <div class="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4">
-        <div class="flex items-start gap-3">
-          <img :src="state.lore?.portrait || ''" alt="" class="w-16 h-16 rounded object-cover border border-neutral-800"
-            x-show="!!(state.lore?.portrait)">
-          <div class="min-w-0">
-            <div class="text-xs uppercase tracking-widest text-neutral-400" x-text="state.lore?.tag || ''"></div>
-            <h4 class="font-semibold" x-text="state.lore?.name || ''"></h4>
-            <p class="text-sm text-neutral-300 mt-1" x-text="state.lore?.bio || ''"></p>
+      <div class="space-y-4">
+        <div class="rounded-lg border border-neutral-800 bg-neutral-900/40 p-4">
+          <div class="flex items-start gap-3">
+            <img :src="state.lore?.portrait || ''" alt=""
+              class="w-16 h-16 rounded object-cover border border-neutral-800" x-show="!!(state.lore?.portrait)">
+            <div class="min-w-0">
+              <div class="text-xs uppercase tracking-widest text-neutral-400" x-text="state.lore?.tag || ''"></div>
+              <h4 class="font-semibold" x-text="state.lore?.name || ''"></h4>
+              <p class="text-sm text-neutral-300 mt-1" x-text="state.lore?.bio || ''"></p>
+            </div>
+          </div>
+
+          <div x-show="window.CHAPTER_SEED?.meta?.extras?.lore_page" class="mt-3">
+            <a :href="window.CHAPTER_SEED.meta.extras.lore_page" target="_blank" rel="noopener"
+              class="inline-flex h-10 items-center justify-center rounded-full border border-neutral-700 bg-neutral-900/60 hover:bg-neutral-800 px-4 text-sm">
+              Open full character page
+            </a>
           </div>
         </div>
 
-        <div x-show="window.CHAPTER_SEED?.meta?.extras?.lore_page" class="mt-3">
-          <a :href="window.CHAPTER_SEED.meta.extras.lore_page" target="_blank" rel="noopener"
-            class="inline-flex h-10 items-center justify-center rounded-full border border-neutral-700 bg-neutral-900/60 hover:bg-neutral-800 px-4 text-sm">
-            Open full character page
-          </a>
-        </div>
-      </div>
-
-      <div class="grid sm:grid-cols-2 gap-3">
-        <div class="rounded-lg border border-neutral-800 p-3">
-          <h5 class="text-sm font-semibold mb-2">Loadout</h5>
-          <ul class="text-sm list-disc pl-5 space-y-1">
-            <template x-for="(t, i) in (state.lore?.loadout || [])" :key="i">
-              <li x-text="t"></li>
-            </template>
-          </ul>
-          <p x-show="!(state.lore?.loadout?.length)" class="text-sm text-neutral-400">—</p>
-        </div>
-        <div class="rounded-lg border border-neutral-800 p-3">
-          <h5 class="text-sm font-semibold mb-2">Signals</h5>
-          <ul class="text-sm list-disc pl-5 space-y-1">
-            <template x-for="(s, i) in (state.lore?.signals || [])" :key="i">
-              <li x-text="s"></li>
-            </template>
-          </ul>
-          <p x-show="!(state.lore?.signals?.length)" class="text-sm text-neutral-400">—</p>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <div class="rounded-lg border border-neutral-800 p-3">
+            <h5 class="text-sm font-semibold mb-2">Loadout</h5>
+            <ul class="text-sm list-disc pl-5 space-y-1">
+              <template x-for="(t, i) in (state.lore?.loadout || [])" :key="i">
+                <li x-text="t"></li>
+              </template>
+            </ul>
+            <p x-show="!(state.lore?.loadout?.length)" class="text-sm text-neutral-400">—</p>
+          </div>
+          <div class="rounded-lg border border-neutral-800 p-3">
+            <h5 class="text-sm font-semibold mb-2">Signals</h5>
+            <ul class="text-sm list-disc pl-5 space-y-1">
+              <template x-for="(s, i) in (state.lore?.signals || [])" :key="i">
+                <li x-text="s"></li>
+              </template>
+            </ul>
+            <p x-show="!(state.lore?.signals?.length)" class="text-sm text-neutral-400">—</p>
+          </div>
         </div>
       </div>
     </div>
@@ -655,7 +674,6 @@
     const cid = {{ chapter.id }};
     if (!uid || !cid) return;
 
-    // fire after ~15s or scroll ~40%
     let fired = false;
     function send() {
       if (fired) return; fired = true;
